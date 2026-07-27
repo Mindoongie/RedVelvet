@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  edusafe-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: edusafe_bus_app
+    ports:
+      - "8080:80"
+      - "5173:80"
+    restart: always
+    environment:
+      - NODE_ENV=production
