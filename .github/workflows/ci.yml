@@ -2,9 +2,7 @@ name: Frontend CI / Build Check
 
 on:
   push:
-    branches: [ "main", "master", "cheese" ]
   pull_request:
-    branches: [ "main", "master", "cheese" ]
 
 jobs:
   build-and-check:
