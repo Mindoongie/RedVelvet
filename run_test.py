@@ -1,4 +1,5 @@
 import time
+import json
 from bus_tracking_core.goong_map_api import GoongMapAPI
 from bus_tracking_core.deviation_detector import DeviationDetector
 from bus_tracking_core.gps_filter import SimpleMovingAverageFilter
@@ -6,72 +7,247 @@ from bus_tracking_core.eta_calculator import calculate_remaining_distance, calcu
 
 # 1. SETUP THÔNG SỐ
 API_KEY = "0DoQ7tLprstpmuviK5YIGkT4k5mFF5PsofQLHYbW"  # <-- KEY Goong Maps của bạn
-origin = (21.0285, 105.8542)         # Hồ Gươm, Hà Nội
-destination = (21.0031, 105.8456)    # Đại học Bách Khoa Hà Nội
+origin = (21.02881, 105.85417)       # 17 Trần Nguyên Hãn
+destination = (21.00313, 105.8457)   # Tạ Quang Bửu, Bách Khoa
 
-def run_simulation():
-    print("--- BẮT ĐẦU TEST MODULE BUS TRACKING ---\n")
-
-    # 2. LẤY TUYẾN ĐƯỜNG TỪ GOONG MAPS
-    print("1. Gọi Goong API lấy tuyến đường...")
-    goong = GoongMapAPI(API_KEY)
-    
-    # (Nếu chưa có Key, ta dùng tuyến đường giả lập để code vẫn chạy được)
-    waypoints = [
-        (21.02850, 105.85420),
-        (21.02500, 105.85100),
-        (21.01800, 105.84800),
-        (21.00310, 105.84560)
-    ]
-    
-    if API_KEY != "YOUR_GOONG_API_KEY_HERE":
-        data = goong.get_directions(origin[0], origin[1], destination[0], destination[1])
-        real_waypoints = goong.extract_waypoints_from_directions(data)
-        if real_waypoints:
-            waypoints = real_waypoints
-            print(f"   -> Đã lấy thành công {len(waypoints)} điểm lộ trình từ Goong Maps.")
-    else:
-        print("   -> Chưa có API KEY, sử dụng tuyến đường giả định (Mock Data).")
-
-    # 3. KHỞI TẠO CÁC MODULE THUẬT TOÁN
-    print("\n2. Khởi tạo thuật toán Lọc nhiễu và Cảnh báo lệch tuyến...")
+def run_backend_logic_for_scenario(waypoints, gps_stream):
+    """
+    Hàm này chạy lõi Backend (Lọc nhiễu -> Phát hiện lệch -> Tính ETA)
+    Trả về mảng kết quả để truyền cho Frontend.
+    """
     noise_filter = SimpleMovingAverageFilter(window_size=3)
-    # Ngưỡng lệch 100m, cần 3 lần liên tiếp, cooldown 10 giây cho dễ test
     detector = DeviationDetector(threshold_m=100.0, consecutive_required=3, cooldown_seconds=10.0)
+    
+    results = []
+    for ping in gps_stream:
+        # Lọc nhiễu
+        s_lat, s_lon = noise_filter.process(ping['lat'], ping['lon'])
+        
+        # Check chệch
+        status = detector.process_gps_ping(s_lat, s_lon, waypoints)
+        
+        # Tính ETA
+        rem_dist = calculate_remaining_distance(s_lat, s_lon, waypoints, status['nearest_segment'])
+        eta_min = calculate_eta_simple(rem_dist, ping['speed'])
+        
+        # Format text hiển thị
+        if status['should_alert']:
+            ui_status = "🚨 ALARM: ĐÃ LỆCH TUYẾN"
+            alert = True
+        elif status['is_deviated']:
+            ui_status = status['reason'] # Sẽ hiện "Mới lệch 1/3 lần..."
+            alert = False
+        else:
+            ui_status = "Xe đi đúng tuyến"
+            alert = False
+            
+        results.append({
+            "lat": s_lat,
+            "lon": s_lon,
+            "eta": f"{eta_min:.1f} phút",
+            "status": ui_status,
+            "alert": alert
+        })
+    return results
 
-    # 4. GIẢ LẬP DỮ LIỆU GPS TỪ XE BUS (Bị nhiễu và đi chệch)
-    mock_gps_stream = [
-        {"lat": 21.02850, "lon": 105.85420, "speed": 30}, # Đúng tuyến
-        {"lat": 21.02505, "lon": 105.85105, "speed": 35}, # Hơi nhiễu 1 tí (vẫn tính là đúng tuyến)
-        {"lat": 21.02500, "lon": 105.86000, "speed": 40}, # Bắt đầu chệch xa (Lần 1)
-        {"lat": 21.02550, "lon": 105.86100, "speed": 40}, # Vẫn chệch (Lần 2)
-        {"lat": 21.02600, "lon": 105.86200, "speed": 40}, # Vẫn chệch (Lần 3 -> Phải báo động!)
-        {"lat": 21.01800, "lon": 105.84800, "speed": 30}, # Vòng về đúng tuyến
+def generate_html(waypoints, scenario_correct, scenario_deviate):
+    """
+    Tạo file HTML với dữ liệu bản đồ chính xác 100% từ Goong API và hình nền Goong Maps
+    """
+    # Goong JS yêu cầu định dạng [lng, lat], nhưng backend đang dùng [lat, lng]
+    # Nên ta cần map lại cho Frontend
+    waypoints_lng_lat = [[p[1], p[0]] for p in waypoints]
+    
+    html_template = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Demo Bản Đồ - Bus Tracking Tích hợp thật (Goong Maps)</title>
+    <!-- Thư viện Goong JS -->
+    <script src='https://cdn.jsdelivr.net/npm/@goongmaps/goong-js@1.0.9/dist/goong-js.js'></script>
+    <link href='https://cdn.jsdelivr.net/npm/@goongmaps/goong-js@1.0.9/dist/goong-js.css' rel='stylesheet' />
+    <style>
+        body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; }}
+        #map {{ height: 100vh; width: 100%; }}
+        #info-panel {{
+            position: absolute; top: 20px; left: 50px; z-index: 1000;
+            background: rgba(255, 255, 255, 0.95); padding: 20px;
+            border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 300px;
+        }}
+        .warning {{ color: #d9534f; font-weight: bold; }}
+        .success {{ color: #5cb85c; font-weight: bold; }}
+        .btn {{ padding: 10px; width: 100%; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 10px; font-weight: bold;}}
+        .btn-green {{ background: #28a745; }}
+        .btn-red {{ background: #dc3545; }}
+    </style>
+</head>
+<body>
+    <div id="info-panel">
+        <h2>Hệ thống Tracking</h2>
+        <button class="btn btn-green" onclick="startSimulation('correct')">▶ Chạy Test ĐÚNG TUYẾN</button>
+        <button class="btn btn-red" onclick="startSimulation('deviate')">▶ Chạy Test LỆCH HƯỚNG</button>
+        <hr>
+        <p><strong>Trạng thái:</strong> <span id="status" class="success">Chưa chạy</span></p>
+        <p><strong>ETA:</strong> <span id="eta">---</span></p>
+    </div>
+    <div id="map"></div>
+
+    <script>
+        goongjs.accessToken = 'cdRcfn7LsObuzzllZr6W'; // MapTiles Key của bạn
+        
+        var waypoints = {json.dumps(waypoints_lng_lat)};
+        
+        var map = new goongjs.Map({{
+            container: 'map',
+            style: 'https://tiles.goong.io/assets/goong_map_web.json',
+            center: waypoints[0], // [lng, lat]
+            zoom: 15
+        }});
+
+        var busMarker = null;
+        var popup = new goongjs.Popup({{ offset: 25, closeButton: false }}).setText('CẢNH BÁO: Xe đi sai tuyến quá mức!');
+
+        map.on('load', function () {{
+            // Vẽ đường đi
+            map.addSource('route', {{
+                'type': 'geojson',
+                'data': {{
+                    'type': 'Feature',
+                    'properties': {{}},
+                    'geometry': {{
+                        'type': 'LineString',
+                        'coordinates': waypoints
+                    }}
+                }}
+            }});
+            
+            map.addLayer({{
+                'id': 'route',
+                'type': 'line',
+                'source': 'route',
+                'layout': {{
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                }},
+                'paint': {{
+                    'line-color': '#007bff',
+                    'line-width': 6,
+                    'line-opacity': 0.7
+                }}
+            }});
+
+            // Tạo icon xe bus
+            var el = document.createElement('div');
+            el.style.backgroundImage = 'url(https://cdn-icons-png.flaticon.com/512/3448/3448339.png)';
+            el.style.width = '40px';
+            el.style.height = '40px';
+            el.style.backgroundSize = '100%';
+            
+            busMarker = new goongjs.Marker(el)
+                .setLngLat(waypoints[0])
+                .addTo(map);
+        }});
+
+        // Data sinh ra từ Backend Python
+        var data_correct = {json.dumps(scenario_correct)};
+        var data_deviate = {json.dumps(scenario_deviate)};
+        
+        let timeoutId = null;
+
+        function runStep(dataArray, step) {{
+            if (step >= dataArray.length) {{
+                alert("Đã chạy xong kịch bản!");
+                return;
+            }}
+            var data = dataArray[step];
+            
+            // Goong dùng Lng, Lat (ngược với hệ truyền thống)
+            var currentPos = [data.lon, data.lat];
+            busMarker.setLngLat(currentPos);
+            map.panTo(currentPos);
+            
+            document.getElementById('eta').innerText = data.eta;
+            var statusEl = document.getElementById('status');
+            statusEl.innerText = data.status;
+            
+            if (data.alert) {{
+                statusEl.className = 'warning';
+                if (!popup.isOpen()) {{
+                    busMarker.setPopup(popup);
+                    busMarker.togglePopup();
+                }}
+            }} else if (data.status.includes("Mới lệch")) {{
+                statusEl.className = 'warning';
+                if (popup.isOpen()) busMarker.togglePopup();
+            }} else {{
+                statusEl.className = 'success';
+                if (popup.isOpen()) busMarker.togglePopup();
+            }}
+
+            timeoutId = setTimeout(function() {{ runStep(dataArray, step + 1); }}, 1000);
+        }}
+
+        function startSimulation(type) {{
+            if (!busMarker) {{ alert("Bản đồ đang tải, chờ chút!"); return; }}
+            if(timeoutId) clearTimeout(timeoutId);
+            
+            // Tắt popup nếu đang mở
+            if (popup.isOpen()) busMarker.togglePopup();
+            
+            if(type === 'correct') {{
+                runStep(data_correct, 0);
+            }} else {{
+                runStep(data_deviate, 0);
+            }}
+        }}
+    </script>
+</body>
+</html>"""
+    with open("demo_map.html", "w", encoding="utf-8") as f:
+        f.write(html_template)
+    print("Đã tạo thành công file demo_map.html mới nhất với bản đồ Goong!")
+
+def main():
+    print("1. Gọi Goong API lấy lộ trình thực tế...")
+    goong = GoongMapAPI(API_KEY)
+    data = goong.get_directions(origin[0], origin[1], destination[0], destination[1])
+    waypoints = goong.extract_waypoints_from_directions(data)
+    
+    if not waypoints:
+        print("Lỗi lấy lộ trình")
+        return
+        
+    print(f"Lấy thành công {len(waypoints)} điểm đường phố chính xác.")
+
+    # TRƯỜNG HỢP 1: XE ĐI ĐÚNG TUYẾN
+    # Xe sẽ bám sát toàn bộ các điểm của lộ trình từ đầu đến cuối
+    mock_correct_stream = []
+    for i in range(len(waypoints)):
+        mock_correct_stream.append({
+            "lat": waypoints[i][0] + 0.00005, # Cộng xíu nhiễu GPS (nhưng thuật toán sẽ lọc)
+            "lon": waypoints[i][1] - 0.00005,
+            "speed": 35 # 35 km/h
+        })
+
+    # TRƯỜNG HỢP 2: XE ĐI CHỆCH HƯỚNG
+    # 3 điểm đầu đi đúng, từ điểm thứ 4 rẽ ngang sang phố khác
+    mock_deviate_stream = [
+        {"lat": waypoints[0][0], "lon": waypoints[0][1], "speed": 30},
+        {"lat": waypoints[1][0], "lon": waypoints[1][1], "speed": 30},
+        {"lat": waypoints[2][0], "lon": waypoints[2][1], "speed": 30},
+        # Bắt đầu rẽ ngang xa dần lộ trình
+        {"lat": waypoints[2][0] + 0.0010, "lon": waypoints[2][1] + 0.0010, "speed": 40}, # Cách 100m
+        {"lat": waypoints[2][0] + 0.0020, "lon": waypoints[2][1] + 0.0020, "speed": 40}, # Cách 200m
+        {"lat": waypoints[2][0] + 0.0030, "lon": waypoints[2][1] + 0.0030, "speed": 40}, # Cách 300m (Báo động!)
+        {"lat": waypoints[2][0] + 0.0040, "lon": waypoints[2][1] + 0.0040, "speed": 40},
     ]
 
-    print("\n3. Bắt đầu giả lập nhận tín hiệu GPS realtime:")
-    for i, ping in enumerate(mock_gps_stream):
-        print(f"\n--- Nhận Ping #{i+1} ---")
-        
-        # Bước A: Lọc nhiễu tọa độ
-        smooth_lat, smooth_lon = noise_filter.process(ping['lat'], ping['lon'])
-        print(f"Tọa độ gốc: {ping['lat']:.5f}, {ping['lon']:.5f} | Đã lọc: {smooth_lat:.5f}, {smooth_lon:.5f}")
+    print("2. Chạy Backend xử lý Thuật toán...")
+    res_correct = run_backend_logic_for_scenario(waypoints, mock_correct_stream)
+    res_deviate = run_backend_logic_for_scenario(waypoints, mock_deviate_stream)
 
-        # Bước B: Cập nhật độ lệch tuyến
-        status = detector.process_gps_ping(smooth_lat, smooth_lon, waypoints)
-        print(f"Cách tuyến đường: {status['distance_m']:.1f}m. Trạng thái: {status['reason']}")
-        if status['should_alert']:
-            print("🚨 ALARM: TÀI XẾ ĐÃ ĐI SAI TUYẾN QUÁ MỨC CHO PHÉP !!!")
-            
-        # Bước C: Tính khoảng cách còn lại & ETA (thời gian đến)
-        # Giả sử xe đã đi qua các waypoint trước đó, lấy từ segment gần nhất
-        nearest_idx = status['nearest_segment']
-        rem_dist = calculate_remaining_distance(smooth_lat, smooth_lon, waypoints, nearest_idx)
-        eta_minutes = calculate_eta_simple(rem_dist, ping['speed'])
-        
-        print(f"Còn lại: {rem_dist:.1f}m. Thời gian đến dự kiến (ETA): {eta_minutes:.1f} phút.")
-        
-        time.sleep(1) # Chờ 1 giây giả lập thời gian thực
+    print("3. Xuất file giao diện Frontend (demo_map.html)...")
+    generate_html(waypoints, res_correct, res_deviate)
 
 if __name__ == "__main__":
-    run_simulation()
+    main()
