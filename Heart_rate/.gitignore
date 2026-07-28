@@ -1,0 +1,13 @@
+# Model tải về lúc cài đặt — 3,7 MB, lấy lại bằng: python -m rppg.download_model
+models/
+*.task
+*.task.part
+
+# Đầu ra của demo
+shot_*.png
+*.mp4
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
