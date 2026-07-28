@@ -6,7 +6,7 @@ from bus_tracking_core.gps_filter import SimpleMovingAverageFilter
 from bus_tracking_core.eta_calculator import calculate_remaining_distance, calculate_eta_simple
 
 # 1. SETUP THÔNG SỐ
-API_KEY = "0DoQ7tLprstpmuviK5YIGkT4k5mFF5PsofQLHYbW"  # <-- KEY Goong Maps của bạn
+API_KEY = "0DoQ7tLprstpmuviK5YIGkT4k5mFF5PsofQLHYbW"  # <-- KEY Goong Maps (API)
 origin = (21.02881, 105.85417)       # 17 Trần Nguyên Hãn
 destination = (21.00313, 105.8457)   # Tạ Quang Bửu, Bách Khoa
 
@@ -93,13 +93,13 @@ def generate_html(waypoints, scenario_correct, scenario_deviate):
     <div id="map"></div>
 
     <script>
-        goongjs.accessToken = 'cdRcfn7LsObuzzllZr6W'; // MapTiles Key của bạn
+        goongjs.accessToken = 'Glr05IWv5eqyowXAYE5mphqFZMgcCpXwBxiLS201'; // MapTiles Key của bạn
         
         var waypoints = {json.dumps(waypoints_lng_lat)};
         
         var map = new goongjs.Map({{
             container: 'map',
-            style: 'https://tiles.goong.io/assets/goong_map_web.json',
+            style: 'https://tiles.goong.io/assets/goong_map_web.json?api_key=Glr05IWv5eqyowXAYE5mphqFZMgcCpXwBxiLS201',
             center: waypoints[0], // [lng, lat]
             zoom: 15
         }});
