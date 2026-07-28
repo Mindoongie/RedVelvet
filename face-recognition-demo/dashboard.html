@@ -1,0 +1,207 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SafeBus AI – Dashboard Tài xế</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="./engine.js"></script>
+<style>
+:root{--primary:#6366f1;--primary-dark:#4f46e5;--primary-light:#a5b4fc;--bg:#0a0b0f;--bg2:#111318;--card:#13151f;--border:rgba(255,255,255,0.08);--text:#f1f5f9;--text2:#94a3b8;--text3:#64748b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:rgba(10,11,15,.95);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:50;backdrop-filter:blur(20px)}
+.back-btn{color:var(--text2);text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border:1px solid var(--border);border-radius:8px}
+.back-btn:hover{background:rgba(255,255,255,.05)}
+header h1{font-size:19px;font-weight:800;flex:1}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse-ring 1.5s infinite}
+@keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(34,197,94,.7)}70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+main{max-width:1200px;margin:0 auto;padding:28px}
+.grid-top{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;text-align:center;transition:all .3s}
+.stat-card:hover{transform:translateY(-2px)}
+.stat-card .icon{font-size:36px;margin-bottom:12px}
+.stat-card .num{font-size:48px;font-weight:900;line-height:1}
+.stat-card .lbl{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text2);margin-top:8px}
+.stat-card.on-bus{border-color:rgba(99,102,241,.3);background:linear-gradient(135deg,rgba(99,102,241,.1),var(--card))}
+.stat-card.on-bus .num{background:linear-gradient(135deg,var(--primary-light),#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-card.alighted{border-color:rgba(16,185,129,.3);background:linear-gradient(135deg,rgba(16,185,129,.1),var(--card))}
+.stat-card.alighted .num{color:#6ee7b7}
+.stat-card.notboard{border-color:rgba(245,158,11,.3);background:linear-gradient(135deg,rgba(245,158,11,.08),var(--card))}
+.stat-card.notboard .num{color:#fcd34d}
+.layout2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px}
+.card-title{font-size:14px;font-weight:700;color:var(--primary-light);margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.roster-table{width:100%;border-collapse:collapse;font-size:13px}
+.roster-table th{text-align:left;padding:10px 12px;background:var(--bg2);color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+.roster-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.roster-table tr:last-child td{border-bottom:none}
+.roster-table tbody tr:hover{background:rgba(255,255,255,.02)}
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700}
+.status-badge.on-bus{background:rgba(99,102,241,.15);color:var(--primary-light);border:1px solid rgba(99,102,241,.3)}
+.status-badge.alighted{background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3)}
+.status-badge.not-boarded{background:rgba(245,158,11,.1);color:#fcd34d;border:1px solid rgba(245,158,11,.3)}
+.alert-item{background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.3);border-radius:12px;padding:14px 16px;margin-bottom:10px;animation:fadeIn .3s ease}
+.alert-item.warning{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.alert-title{font-size:13px;font-weight:700;color:#fda4af;margin-bottom:4px}
+.alert-item.warning .alert-title{color:#fcd34d}
+.alert-msg{font-size:12px;color:var(--text2);line-height:1.5}
+.alert-time{font-size:11px;color:var(--text3);margin-top:6px}
+button{padding:9px 16px;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+button:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff}
+.btn-ghost{background:rgba(255,255,255,.05);border:1.5px solid var(--border);color:var(--text2)}
+.btn-ghost:hover{background:rgba(255,255,255,.1)}
+.bus-select-row{display:flex;gap:10px;align-items:center;margin-bottom:20px}
+input,select{padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;transition:border-color .2s}
+input:focus,select:focus{outline:none;border-color:var(--primary)}
+.empty-state{text-align:center;padding:40px;color:var(--text3);font-size:14px}
+.empty-state .big{font-size:48px;margin-bottom:12px}
+.alert-counter{background:rgba(244,63,94,.2);color:#fda4af;border:1px solid rgba(244,63,94,.3);padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.safe-banner{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:12px;padding:16px;text-align:center;color:#6ee7b7;font-weight:600;font-size:14px}
+code{background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;font-size:12px;color:var(--primary-light)}
+@media(max-width:800px){.grid-top{grid-template-columns:1fr 1fr}.layout2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html" class="back-btn">← Trang chủ</a>
+  <h1>📊 Dashboard Tài xế</h1>
+  <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)">
+    <span class="live-dot"></span> Live
+  </div>
+</header>
+<main>
+  <div class="bus-select-row">
+    <label style="font-size:13px;font-weight:600;color:var(--text2);white-space:nowrap">Chọn xe:</label>
+    <input id="busIdInput" placeholder="VD: BUS-01" style="width:140px"/>
+    <button class="btn-primary" onclick="loadDashboard()">🔄 Tải dữ liệu</button>
+    <button class="btn-ghost" onclick="runSweep()">🔍 Rà soát khoang xe</button>
+    <button class="btn-ghost" onclick="window.location.href='checkin.html'">🎯 Điểm danh</button>
+    <button class="btn-ghost" onclick="window.location.href='register.html'">📸 Đăng ký</button>
+  </div>
+  <!-- Stats top -->
+  <div class="grid-top" id="statsTop">
+    <div class="stat-card on-bus"><div class="icon">🚌</div><div class="num" id="numOnBus">–</div><div class="lbl">Đang trên xe</div></div>
+    <div class="stat-card alighted"><div class="icon">✅</div><div class="num" id="numAlighted">–</div><div class="lbl">Đã xuống xe</div></div>
+    <div class="stat-card notboard"><div class="icon">⏳</div><div class="num" id="numNotBoard">–</div><div class="lbl">Chưa lên xe</div></div>
+  </div>
+  <div class="layout2">
+    <!-- Roster -->
+    <div class="card">
+      <div class="card-title">
+        <span>📋 Danh sách học sinh</span>
+        <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="loadDashboard()">Làm mới</button>
+      </div>
+      <div id="rosterArea"><div class="empty-state"><div class="big">📊</div>Nhập mã xe và bấm "Tải dữ liệu"</div></div>
+    </div>
+    <!-- Alerts -->
+    <div class="card">
+      <div class="card-title">
+        <span>🚨 Cảnh báo <span class="alert-counter" id="alertCount" style="display:none">0</span></span>
+        <button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="clearAlerts()">Xóa tất cả</button>
+      </div>
+      <div id="alertsArea"><div class="empty-state"><div class="big">🟢</div>Không có cảnh báo</div></div>
+    </div>
+  </div>
+</main>
+<script>
+let alerts = [];
+
+function loadDashboard() {
+  const busId = document.getElementById('busIdInput').value.trim();
+  if (!busId) { alert('Nhập mã xe'); return; }
+  const roster = getRoster(busId);
+  if (!roster) {
+    document.getElementById('rosterArea').innerHTML = '<div class="empty-state"><div class="big">⚠️</div>Không tìm thấy chuyến xe <b>' + busId + '</b>.<br/>Hãy bắt đầu chuyến tại trang Điểm danh.</div>';
+    document.getElementById('numOnBus').textContent = '–';
+    document.getElementById('numAlighted').textContent = '–';
+    document.getElementById('numNotBoard').textContent = '–';
+    return;
+  }
+  const summary = rosterSummary(roster);
+  document.getElementById('numOnBus').textContent = summary.counts.on_bus;
+  document.getElementById('numAlighted').textContent = summary.counts.alighted;
+  document.getElementById('numNotBoard').textContent = summary.counts.not_boarded;
+  renderRosterTable(summary.entries);
+}
+
+function renderRosterTable(entries) {
+  if (!entries || !entries.length) {
+    document.getElementById('rosterArea').innerHTML = '<div class="empty-state"><div class="big">📭</div>Danh sách trống</div>';
+    return;
+  }
+  const rows = entries.map((e, i) => {
+    let badge, icon;
+    if (e.status === 'on_bus') { badge = 'on-bus'; icon = '🚌'; }
+    else if (e.status === 'alighted') { badge = 'alighted'; icon = '✅'; }
+    else { badge = 'not-boarded'; icon = '⏳'; }
+    const statusText = e.status === 'on_bus' ? 'Trên xe' : e.status === 'alighted' ? 'Đã xuống' : 'Chưa lên';
+    return '<tr><td>' + (i + 1) + '</td><td><b>' + e.full_name + '</b><br/><code>' + e.student_id + '</code></td><td><span class="status-badge ' + badge + '">' + icon + ' ' + statusText + '</span></td><td style="font-size:11px;color:var(--text3)">' + (e.boarded_at ? '↑ ' + e.boarded_at : '–') + (e.alighted_at ? '<br/>↓ ' + e.alighted_at : '') + '</td></tr>';
+  }).join('');
+  document.getElementById('rosterArea').innerHTML = '<table class="roster-table"><thead><tr><th>#</th><th>Học sinh</th><th>Trạng thái</th><th>Thời gian</th></tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+function runSweep() {
+  const busId = document.getElementById('busIdInput').value.trim();
+  if (!busId) { alert('Nhập mã xe'); return; }
+  const result = cabinSweep(busId);
+  if (result.alerts && result.alerts.length) {
+    result.alerts.forEach(a => addAlert(a.severity, a.code, a.message));
+    playAlert('critical');
+  } else {
+    document.getElementById('alertsArea').innerHTML = '<div class="safe-banner">✅ Khoang xe an toàn – Không còn học sinh nào bị bỏ lại!</div>';
+  }
+  if (result.roster_summary) {
+    document.getElementById('numOnBus').textContent = result.roster_summary.counts.on_bus;
+    document.getElementById('numAlighted').textContent = result.roster_summary.counts.alighted;
+    document.getElementById('numNotBoard').textContent = result.roster_summary.counts.not_boarded;
+  }
+}
+
+function addAlert(severity, code, message) {
+  const now = new Date().toLocaleTimeString('vi-VN');
+  alerts.unshift({ severity, code, message, time: now });
+  renderAlerts();
+}
+
+function renderAlerts() {
+  const area = document.getElementById('alertsArea');
+  const counter = document.getElementById('alertCount');
+  if (!alerts.length) {
+    area.innerHTML = '<div class="empty-state"><div class="big">🟢</div>Không có cảnh báo</div>';
+    counter.style.display = 'none';
+    return;
+  }
+  counter.textContent = alerts.length;
+  counter.style.display = 'inline';
+  area.innerHTML = alerts.map(a =>
+    '<div class="alert-item ' + (a.severity === 'warning' ? 'warning' : '') + '">' +
+    '<div class="alert-title">' + (a.severity === 'critical' ? '🚨 CẢNH BÁO KHẨN CẤP' : '⚠️ Cảnh báo') + '</div>' +
+    '<div class="alert-msg">' + a.message + '</div>' +
+    '<div class="alert-time">' + a.time + ' · code: ' + a.code + '</div>' +
+    '</div>'
+  ).join('');
+}
+
+function clearAlerts() { alerts = []; renderAlerts(); }
+
+// Auto-refresh every 5 seconds
+setInterval(() => {
+  const busId = document.getElementById('busIdInput').value.trim();
+  if (busId) loadDashboard();
+}, 5000);
+
+// Check for any trip data on load
+window.addEventListener('load', () => {
+  const a = getBusAssignments();
+  const keys = Object.keys(a);
+  if (keys.length) {
+    document.getElementById('busIdInput').value = keys[0];
+    loadDashboard();
+  }
+});
+</script>
+</body>
+</html>

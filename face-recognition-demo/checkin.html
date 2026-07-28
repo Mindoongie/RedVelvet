@@ -1,0 +1,290 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SafeBus AI – Kiosk Điểm danh</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="./face-api.min.js"></script>
+<script src="./engine.js"></script>
+<style>
+:root{--primary:#6366f1;--primary-dark:#4f46e5;--primary-light:#a5b4fc;--bg:#0a0b0f;--bg2:#111318;--card:#13151f;--border:rgba(255,255,255,0.08);--text:#f1f5f9;--text2:#94a3b8;--text3:#64748b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:rgba(10,11,15,.95);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:50;backdrop-filter:blur(20px)}
+.back-btn{color:var(--text2);text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border:1px solid var(--border);border-radius:8px}
+.back-btn:hover{background:rgba(255,255,255,.05)}
+header h1{font-size:19px;font-weight:800;flex:1}
+.model-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);padding:4px 10px;border:1px solid var(--border);border-radius:999px}
+.dot{width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0;animation:blink 1.5s infinite}
+.dot.ready{background:#22c55e;animation:none}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+main{max-width:1100px;margin:0 auto;padding:28px}
+.layout{display:grid;grid-template-columns:1fr 420px;gap:24px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;margin-bottom:20px}
+.card-title{font-size:14px;font-weight:700;color:var(--primary-light);margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.trip-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+input,select{padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;transition:border-color .2s;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--primary)}
+button{padding:10px 16px;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+button:disabled{opacity:.4;cursor:not-allowed}
+.btn-start{background:linear-gradient(135deg,#10b981,#059669);color:#fff;box-shadow:0 4px 16px rgba(16,185,129,.3)}
+.btn-board{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;width:100%;justify-content:center;font-size:16px;padding:16px;border-radius:14px;box-shadow:0 4px 20px rgba(99,102,241,.4);margin-bottom:12px}
+.btn-board:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 28px rgba(99,102,241,.5)}
+.btn-alight{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;width:100%;justify-content:center;font-size:16px;padding:16px;border-radius:14px;box-shadow:0 4px 20px rgba(245,158,11,.3);margin-bottom:12px}
+.btn-alight:hover:not(:disabled){transform:translateY(-2px)}
+.btn-end{background:linear-gradient(135deg,#f43f5e,#e11d48);color:#fff;width:100%;justify-content:center;font-size:15px;padding:14px;border-radius:14px;box-shadow:0 4px 20px rgba(244,63,94,.3)}
+.btn-end:hover:not(:disabled){transform:translateY(-2px)}
+.stage{position:relative;width:100%;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:#060710;margin-bottom:16px;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+video,canvas.overlay{position:absolute;top:0;left:0;width:100%;height:100%}
+/* Scanning line animation */
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--primary),transparent);animation:scan 2s linear infinite;opacity:0}
+.scan-line.active{opacity:.8}
+@keyframes scan{0%{top:0}100%{top:100%}}
+#status{padding:13px 16px;border-radius:12px;background:var(--bg2);border:1px solid var(--border);font-size:14px;min-height:52px;display:flex;align-items:center;line-height:1.5;transition:all .3s;margin-bottom:16px;font-weight:500}
+#status.loading{background:rgba(99,102,241,.1);border-color:rgba(99,102,241,.4);color:var(--primary-light)}
+#status.success{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.4);color:#6ee7b7}
+#status.warning{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.4);color:#fcd34d}
+#status.error{background:rgba(244,63,94,.1);border-color:rgba(244,63,94,.4);color:#fda4af;animation:shake .3s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.stat-box{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;text-align:center;transition:all .3s}
+.stat-box .num{font-size:32px;font-weight:800}
+.stat-box .lbl{font-size:11px;color:var(--text2);margin-top:4px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.stat-box.on-bus{border-color:rgba(99,102,241,.3)}
+.stat-box.on-bus .num{color:var(--primary-light)}
+.stat-box.alighted{border-color:rgba(16,185,129,.3)}
+.stat-box.alighted .num{color:#6ee7b7}
+.stat-box.not-boarded{border-color:rgba(245,158,11,.3)}
+.stat-box.not-boarded .num{color:#fcd34d}
+.log-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px;font-family:monospace;font-size:12px;height:200px;overflow-y:auto;line-height:1.6}
+.log-critical{color:#fda4af;font-weight:700}
+.log-warning{color:#fcd34d}
+.log-info{color:var(--text3)}
+.log-success{color:#6ee7b7;font-weight:600}
+.trip-status{font-size:12px;font-weight:700;color:#6ee7b7}
+.alert-banner{display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:200;background:#f43f5e;color:#fff;padding:16px 28px;border-radius:14px;font-size:16px;font-weight:800;box-shadow:0 8px 32px rgba(244,63,94,.6);animation:pop .3s ease;text-align:center;max-width:90vw}
+.alert-banner.show{display:block}
+@keyframes pop{from{transform:translateX(-50%) scale(.8);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+code{background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;font-size:12px;color:var(--primary-light)}
+.trip-indicator{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;padding:4px 12px;border-radius:999px}
+.trip-indicator.running{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:#6ee7b7}
+.trip-indicator.stopped{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text3)}
+@media(max-width:800px){.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="alert-banner" id="alertBanner"></div>
+<header>
+  <a href="index.html" class="back-btn">← Trang chủ</a>
+  <h1>🎯 Kiosk điểm danh khuôn mặt</h1>
+  <div class="model-badge"><span class="dot" id="modelDot"></span><span id="modelText">Đang tải...</span></div>
+</header>
+<main>
+<div class="layout">
+  <!-- LEFT: Camera -->
+  <div>
+    <div class="card">
+      <div class="card-title">📹 Quét khuôn mặt</div>
+      <div class="stage">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="overlay" class="overlay"></canvas>
+        <div class="scan-line" id="scanLine"></div>
+      </div>
+      <div id="status">Đang khởi tạo hệ thống...</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn-board" id="btnBoard" onclick="handleScan('boarded')" disabled>⬆️ LÊN XE</button>
+        <button class="btn-alight" id="btnAlight" onclick="handleScan('alighted')" disabled>⬇️ XUỐNG XE</button>
+      </div>
+      <button class="btn-end" id="btnEndTrip" onclick="endTrip()" disabled style="margin-top:4px">🔍 Kết thúc chuyến & Rà soát khoang xe</button>
+    </div>
+    <!-- Log -->
+    <div class="card">
+      <div class="card-title">📋 Nhật ký hành động</div>
+      <div class="log-box" id="log"></div>
+    </div>
+  </div>
+  <!-- RIGHT: Trip + roster -->
+  <div>
+    <div class="card">
+      <div class="card-title">🚌 Thông tin chuyến xe</div>
+      <div class="trip-row" style="margin-bottom:14px">
+        <label style="font-size:13px;color:var(--text2);font-weight:600;white-space:nowrap">Mã xe:</label>
+        <input id="busId" value="BUS-01" style="width:120px"/>
+        <button class="btn-start" id="btnStart" onclick="doStartTrip()" style="white-space:nowrap;padding:9px 16px">▶ Bắt đầu</button>
+        <span id="tripIndicator" class="trip-indicator stopped">⚪ Chưa chạy</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Thống kê chuyến</div>
+      <div class="stats-grid">
+        <div class="stat-box on-bus"><div class="num" id="statOnBus">–</div><div class="lbl">Trên xe</div></div>
+        <div class="stat-box alighted"><div class="num" id="statAlighted">–</div><div class="lbl">Đã xuống</div></div>
+        <div class="stat-box not-boarded"><div class="num" id="statNotBoarded">–</div><div class="lbl">Chưa lên</div></div>
+      </div>
+      <!-- Roster detail -->
+      <div id="rosterDetail" style="font-size:13px;color:var(--text2)">Bắt đầu chuyến để xem danh sách.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">ℹ️ Hướng dẫn</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.8">
+        <b style="color:var(--text)">1.</b> Chọn mã xe → Bấm <b>▶ Bắt đầu</b><br/>
+        <b style="color:var(--text)">2.</b> Học sinh đứng trước camera → Bấm <b>⬆️ Lên xe</b> hoặc <b>⬇️ Xuống xe</b><br/>
+        <b style="color:var(--text)">3.</b> Cuối chuyến → Bấm <b>🔍 Kết thúc chuyến</b> để rà soát khoang<br/>
+        <b style="color:#fda4af">⚠️</b> Nếu học sinh lên nhầm xe → Cảnh báo đỏ sẽ hiện ngay lập tức
+      </div>
+    </div>
+  </div>
+</div>
+</main>
+<script>
+let modelReady = false;
+let tripStarted = false;
+let isScanning = false;
+
+function setStatus(t,c=''){const el=document.getElementById('status');el.textContent=t;el.className=c}
+function logLine(t,c='log-info'){
+  const log=document.getElementById('log');
+  const d=document.createElement('div');d.className=c;
+  d.textContent='['+new Date().toLocaleTimeString('vi-VN')+'] '+t;
+  log.prepend(d);
+}
+function updateStats(summary){
+  if(!summary)return;
+  document.getElementById('statOnBus').textContent=summary.counts.on_bus??'0';
+  document.getElementById('statAlighted').textContent=summary.counts.alighted??'0';
+  document.getElementById('statNotBoarded').textContent=summary.counts.not_boarded??'0';
+  // Roster detail
+  const entries=summary.entries||[];
+  if(entries.length){
+    const html=entries.map(e=>{
+      const icon=e.status==='on_bus'?'🟦':e.status==='alighted'?'🟢':'⚪';
+      return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span>'+icon+' <b>'+e.full_name+'</b></span><span style="color:var(--text3)">'+statusLabel(e.status)+'</span></div>';
+    }).join('');
+    document.getElementById('rosterDetail').innerHTML=html;
+  }
+}
+function statusLabel(s){return s==='on_bus'?'Đang trên xe':s==='alighted'?'Đã xuống':'Chưa lên'}
+
+function showBanner(msg,duration=3000){
+  const b=document.getElementById('alertBanner');
+  b.textContent=msg;b.classList.add('show');
+  setTimeout(()=>b.classList.remove('show'),duration);
+}
+
+async function startCamera(){
+  try{
+    const s=await navigator.mediaDevices.getUserMedia({video:{width:480,height:360,facingMode:'user'}});
+    document.getElementById('video').srcObject=s;
+    await new Promise(r=>(document.getElementById('video').onloadedmetadata=r));
+  }catch(e){setStatus('Lỗi camera: '+e.message,'error')}
+}
+
+async function initModels(){
+  try{
+    await loadFaceModels((msg,cls)=>setStatus(msg,cls));
+    modelReady=true;
+    document.getElementById('modelDot').classList.add('ready');
+    document.getElementById('modelText').textContent='Model sẵn sàng';
+    setStatus('Model sẵn sàng. Bấm "Bắt đầu chuyến" để bắt đầu điểm danh.','success');
+    startDrawLoop(document.getElementById('video'),document.getElementById('overlay'),()=>modelReady);
+  }catch(e){document.getElementById('modelText').textContent='Lỗi';setStatus('Lỗi tải model: '+e.message,'error')}
+}
+
+function doStartTrip(){
+  const busId=document.getElementById('busId').value.trim();
+  if(!busId){setStatus('Nhập mã xe trước.','warning');return}
+  const students=getStudentsForBus(busId);
+  startTrip(busId,students);
+  tripStarted=true;
+  document.getElementById('btnBoard').disabled=false;
+  document.getElementById('btnAlight').disabled=false;
+  document.getElementById('btnEndTrip').disabled=false;
+  document.getElementById('btnStart').disabled=true;
+  document.getElementById('tripIndicator').textContent='🟢 Đang chạy';
+  document.getElementById('tripIndicator').className='trip-indicator running';
+  const summary=rosterSummary(getRoster(busId));
+  updateStats(summary);
+  setStatus('Chuyến '+busId+' bắt đầu! '+students.length+' học sinh được phân công.','success');
+  logLine('Bắt đầu chuyến: '+busId+' ('+students.length+' HS)','log-success');
+}
+
+async function handleScan(eventType){
+  if(!modelReady){setStatus('Model chưa sẵn sàng.','warning');return}
+  if(!tripStarted){setStatus('Chưa bắt đầu chuyến!','warning');return}
+  if(isScanning)return;
+  isScanning=true;
+  const busId=document.getElementById('busId').value.trim();
+  const scanLine=document.getElementById('scanLine');
+  scanLine.classList.add('active');
+  setStatus('Đang quét khuôn mặt...','loading');
+
+  const desc=await captureDescriptor(document.getElementById('video'));
+  if(!desc){
+    setStatus('Không phát hiện khuôn mặt. Di chuyển vào trung tâm khung hình.','warning');
+    scanLine.classList.remove('active');isScanning=false;return;
+  }
+
+  const students=getStudentRegistry();
+  const match=findBestMatch(desc,students);
+
+  if(!match.is_match){
+    setStatus('⚠️ Không nhận diện được khuôn mặt này! Khoảng cách: '+match.distance,'error');
+    logLine('Không nhận diện được khuôn mặt (dist='+match.distance+')','log-critical');
+    playAlert('critical');
+    scanLine.classList.remove('active');isScanning=false;return;
+  }
+
+  const result=registerScan(busId,match.student_id,eventType,match.full_name);
+  updateStats(result.roster_summary);
+
+  if(result.alerts&&result.alerts.length){
+    const critical=result.alerts.some(a=>a.severity==='critical');
+    const msg=result.alerts.map(a=>a.message).join(' | ');
+    setStatus(msg,critical?'error':'warning');
+    result.alerts.forEach(a=>logLine(a.message,a.severity==='critical'?'log-critical':'log-warning'));
+    if(critical){playAlert('critical');showBanner(result.alerts[0].message,5000)}
+    else playAlert('warning');
+  }else{
+    const action=eventType==='boarded'?'ĐÃ LÊN XE ⬆️':'ĐÃ XUỐNG XE ⬇️';
+    setStatus(match.full_name+' — '+action+' (khoảng cách: '+match.distance+')','success');
+    logLine(match.full_name+' — '+action,'log-success');
+    playSuccess();
+  }
+  scanLine.classList.remove('active');isScanning=false;
+}
+
+async function endTrip(){
+  const busId=document.getElementById('busId').value.trim();
+  setStatus('Đang rà soát khoang xe...','loading');
+  const scanLine=document.getElementById('scanLine');
+  scanLine.classList.add('active');
+  setTimeout(()=>scanLine.classList.remove('active'),2000);
+
+  const result=cabinSweep(busId);
+  updateStats(result.roster_summary);
+
+  if(result.alerts&&result.alerts.length){
+    const msg=result.alerts.map(a=>a.message).join(' | ');
+    setStatus('🚨 '+msg,'error');
+    result.alerts.forEach(a=>logLine('[KHOANG XE] '+a.message,'log-critical'));
+    playAlert('critical');
+    showBanner('🚨 PHÁT HIỆN HỌC SINH TRÊN XE! KIỂM TRA NGAY!',8000);
+  }else{
+    setStatus('✅ An toàn! Khoang xe sạch – không còn học sinh. Chuyến kết thúc.','success');
+    logLine('Kết thúc chuyến – khoang xe an toàn ✅','log-success');
+    playSuccess();
+  }
+  tripStarted=false;
+  document.getElementById('btnBoard').disabled=true;
+  document.getElementById('btnAlight').disabled=true;
+  document.getElementById('btnEndTrip').disabled=true;
+  document.getElementById('btnStart').disabled=false;
+  document.getElementById('tripIndicator').textContent='⚪ Kết thúc';
+  document.getElementById('tripIndicator').className='trip-indicator stopped';
+}
+
+(async()=>{await startCamera();await initModels()})();
+</script>
+</body>
+</html>

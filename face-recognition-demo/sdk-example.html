@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SafeBus SDK — Demo tích hợp 1 dòng lệnh</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="./face-api.min.js"></script>
+<script src="./safebus-sdk.js"></script>
+<style>
+  :root {
+    --bg: #0a0b0f; --bg2: #111318; --card: #13151f;
+    --border: rgba(255,255,255,0.08); --text: #f1f5f9;
+    --text2: #94a3b8; --primary: #6366f1; --primary-light: #a5b4fc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── Nền orbs ── */
+  .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: .12; animation: drift 20s infinite alternate ease-in-out; }
+  .orb1 { width:500px;height:500px;background:#6366f1;top:-150px;left:-100px; }
+  .orb2 { width:400px;height:400px;background:#f43f5e;bottom:-100px;right:-80px;animation-delay:-8s; }
+  @keyframes drift { from{transform:translate(0,0)} to{transform:translate(30px,50px)} }
+
+  /* ── Header ── */
+  nav { position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 36px; background: rgba(10,11,15,.85); backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border); }
+  .nav-logo { font-size: 18px; font-weight: 800;
+    background: linear-gradient(135deg,#a5b4fc,#f43f5e); -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent; background-clip: text; }
+  .nav-tag { font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 700;
+    background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.35); color: var(--primary-light); }
+
+  /* ── Page layout ── */
+  .page { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 36px 24px; }
+
+  /* ── Code block ── */
+  .code-card { background: #0d1117; border: 1px solid rgba(99,102,241,.3); border-radius: 16px;
+    padding: 20px 24px; margin-bottom: 28px; position: relative; }
+  .code-card-label { font-size: 11px; font-weight: 700; color: var(--primary-light);
+    letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 14px; }
+  pre { font-family: 'Cascadia Code','Fira Code','Consolas',monospace; font-size: 13px;
+    line-height: 1.8; overflow-x: auto; white-space: pre; }
+  .c-kw  { color: #ff7b72; }   /* keyword */
+  .c-fn  { color: #d2a8ff; }   /* function */
+  .c-str { color: #a5d6ff; }   /* string */
+  .c-cm  { color: #8b949e; }   /* comment */
+  .c-nu  { color: #79c0ff; }   /* number */
+  .copy-btn { position: absolute; top: 14px; right: 14px; background: rgba(99,102,241,.2);
+    border: 1px solid rgba(99,102,241,.4); color: var(--primary-light); padding: 5px 12px;
+    border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+    transition: all .2s; }
+  .copy-btn:hover { background: rgba(99,102,241,.35); }
+
+  /* ── Section headers ── */
+  .section-tag { font-size: 11px; font-weight: 700; color: var(--primary-light);
+    letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+  .section-title { font-size: clamp(22px,3.5vw,36px); font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; }
+  .section-sub { font-size: 15px; color: var(--text2); margin-bottom: 28px; line-height: 1.6; }
+
+  /* ── Tab switcher ── */
+  .tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .tab-btn { padding: 10px 20px; border-radius: 10px; border: 1.5px solid var(--border);
+    background: transparent; color: var(--text2); font-size: 14px; font-weight: 600;
+    font-family: inherit; cursor: pointer; transition: all .2s; }
+  .tab-btn.active { background: linear-gradient(135deg,var(--primary),#4f46e5);
+    color: #fff; border-color: transparent; box-shadow: 0 4px 16px rgba(99,102,241,.4); }
+  .tab-btn:hover:not(.active) { border-color: rgba(99,102,241,.4); color: var(--text); }
+
+  /* ── Widget container area ── */
+  .widget-area { border: 2px dashed rgba(99,102,241,.4); border-radius: 20px;
+    padding: 2px; background: rgba(99,102,241,.03); margin-bottom: 32px; }
+  .widget-area-label { font-size: 11px; color: rgba(99,102,241,.7); font-weight:600;
+    text-align: center; padding: 8px; letter-spacing: 1px; }
+
+  /* ── Callback log ── */
+  .cb-log { background: #0d1117; border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px; font-family: monospace; font-size: 12px; height: 140px; overflow-y: auto;
+    line-height: 1.7; color: var(--text2); margin-bottom: 24px; }
+  .cb-log .cb-success { color: #6ee7b7; font-weight: 700; }
+  .cb-log .cb-alert   { color: #fda4af; font-weight: 700; }
+  .cb-log .cb-info    { color: #a5b4fc; }
+
+  /* ── Info grid ── */
+  .info-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap: 16px; margin-top: 32px; }
+  .info-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px; transition: border-color .2s; }
+  .info-card:hover { border-color: rgba(99,102,241,.4); }
+  .info-icon { font-size: 28px; margin-bottom: 10px; }
+  .info-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .info-desc { font-size: 12px; color: var(--text2); line-height: 1.6; }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+</style>
+</head>
+<body>
+<div class="bg-orbs">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+</div>
+
+<nav>
+  <div class="nav-logo">🚌 SafeBus <strong>SDK</strong></div>
+  <span class="nav-tag">sdk-example.html — Demo tích hợp 1 dòng</span>
+</nav>
+
+<div class="page">
+
+  <!-- ── Hero ── -->
+  <div style="text-align:center;padding:40px 0 36px">
+    <div class="section-tag" style="display:inline-block;margin-bottom:14px">SafeBus SDK v1.0</div>
+    <h1 class="section-title">Nhúng tính năng quét mặt<br/><span style="background:linear-gradient(135deg,#a5b4fc,#f43f5e);-webkit-background-clip:text;-webkit-text-fill-color:transparent">vào bất kỳ trang nào</span></h1>
+    <p class="section-sub">Chỉ cần 3 dòng: import 2 file JS, tạo div, gọi <code style="background:rgba(99,102,241,.15);padding:2px 7px;border-radius:5px;color:#a5b4fc;font-size:14px">SafeBus.init()</code></p>
+  </div>
+
+  <!-- ── Code snippet ── -->
+  <div class="code-card">
+    <div class="code-card-label">🔧 Cách nhúng vào dự án của nhóm bạn</div>
+    <button class="copy-btn" onclick="copyCode()">📋 Copy</button>
+    <pre id="code-snippet"><span class="c-cm">&lt;!-- Bước 1: Import thư viện (chỉ làm 1 lần) --&gt;</span>
+&lt;<span class="c-kw">script</span> <span class="c-str">src</span>=<span class="c-str">"./face-api.min.js"</span>&gt;&lt;/<span class="c-kw">script</span>&gt;
+&lt;<span class="c-kw">script</span> <span class="c-str">src</span>=<span class="c-str">"./safebus-sdk.js"</span>&gt;&lt;/<span class="c-kw">script</span>&gt;
+
+<span class="c-cm">&lt;!-- Bước 2: Tạo container ở bất kỳ đâu trong trang --&gt;</span>
+&lt;<span class="c-kw">div</span> <span class="c-str">id</span>=<span class="c-str">"face-scan"</span>&gt;&lt;/<span class="c-kw">div</span>&gt;
+
+<span class="c-cm">&lt;!-- Bước 3: Gọi 1 dòng lệnh --&gt;</span>
+&lt;<span class="c-kw">script</span>&gt;
+  <span class="c-fn">SafeBus</span>.<span class="c-fn">init</span>(<span class="c-str">'face-scan'</span>, {
+    busId:         <span class="c-str">'BUS-01'</span>,
+    mode:          <span class="c-str">'checkin'</span>,   <span class="c-cm">// hoặc 'register'</span>
+    modelsPath:    <span class="c-str">'./models'</span>,
+
+    <span class="c-cm">// Callback khi học sinh quét thành công → móc vào backend của nhóm</span>
+    onScanSuccess: <span class="c-kw">function</span>(student, event) {
+      console.<span class="c-fn">log</span>(student.full_name, event); <span class="c-cm">// "Nguyễn An", "boarded"</span>
+      <span class="c-cm">// fetch('/api/attendance', { method: 'POST', body: JSON.stringify({...}) })</span>
+    },
+
+    <span class="c-cm">// Callback khi có cảnh báo → hiện popup của hệ thống nhóm</span>
+    onAlert: <span class="c-kw">function</span>(alert) {
+      <span class="c-kw">if</span> (alert.severity === <span class="c-str">'critical'</span>) console.<span class="c-fn">error</span>(alert.message);
+    }
+  });
+&lt;/<span class="c-kw">script</span>&gt;</pre>
+  </div>
+
+  <hr class="divider"/>
+
+  <!-- ── Live Demo ── -->
+  <div class="section-tag">Live Demo</div>
+  <h2 class="section-title" style="font-size:clamp(18px,2.5vw,28px);margin-bottom:8px">Thử ngay bên dưới</h2>
+  <p class="section-sub" style="margin-bottom:20px">Chọn chế độ và xem widget tự khởi tạo trong container</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchMode('checkin', this)">🎯 Checkin (Điểm danh)</button>
+    <button class="tab-btn" onclick="switchMode('register', this)">📸 Register (Đăng ký HS)</button>
+  </div>
+
+  <!-- Callback log -->
+  <div style="margin-bottom:8px;font-size:12px;color:var(--text2);font-weight:600">📡 Callback log — nhật ký sự kiện từ SDK</div>
+  <div class="cb-log" id="callback-log">
+    <div class="cb-info">[SDK] Đang chờ sự kiện từ SafeBus widget...</div>
+  </div>
+
+  <!-- Widget container -->
+  <div class="widget-area">
+    <div class="widget-area-label">▲ ĐÂY LÀ NỀN TRANG CỦA NHÓM BẠN — Widget SafeBus sẽ render vào đây ▲</div>
+    <div id="safebus-demo"></div>
+  </div>
+
+  <!-- Destroy button -->
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:40px">
+    <button onclick="SafeBus.destroy('safebus-demo');logCb('Widget bị hủy. Gọi SafeBus.init() để khởi tạo lại.','cb-info')" style="padding:10px 18px;border-radius:10px;border:1.5px solid rgba(244,63,94,.4);background:rgba(244,63,94,.1);color:#fda4af;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">🗑 SafeBus.destroy() — Tắt widget</button>
+    <button onclick="SafeBus.exportData()" style="padding:10px 18px;border-radius:10px;border:1.5px solid var(--border);background:rgba(255,255,255,.05);color:var(--text2);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">📤 SafeBus.exportData() — Xuất JSON</button>
+  </div>
+
+  <hr class="divider"/>
+
+  <!-- ── Info cards ── -->
+  <div class="section-tag">SDK Reference</div>
+  <h2 class="section-title" style="font-size:clamp(18px,2.5vw,28px);margin-bottom:16px">API tham khảo</h2>
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="info-icon">🚀</div>
+      <div class="info-title">SafeBus.init(id, opts)</div>
+      <div class="info-desc">Khởi tạo widget vào container. Tự bật camera, tải model AI. Hỗ trợ mode <code style="font-size:11px">checkin</code> và <code style="font-size:11px">register</code>.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-icon">🗑</div>
+      <div class="info-title">SafeBus.destroy(id)</div>
+      <div class="info-desc">Tắt camera, dọn dẹp DOM. Gọi khi chuyển trang hoặc không cần widget nữa.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-icon">🎯</div>
+      <div class="info-title">onScanSuccess(student, event)</div>
+      <div class="info-desc">Callback khi quét mặt thành công. Nhận <code style="font-size:11px">student</code> (id, name) và <code style="font-size:11px">event</code> ('boarded'/'alighted').</div>
+    </div>
+    <div class="info-card">
+      <div class="info-icon">🚨</div>
+      <div class="info-title">onAlert(alert)</div>
+      <div class="info-desc">Callback khi có cảnh báo. Nhận <code style="font-size:11px">alert.severity</code> ('critical'/'warning') và <code style="font-size:11px">alert.message</code>.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-icon">📤</div>
+      <div class="info-title">SafeBus.exportData()</div>
+      <div class="info-desc">Xuất toàn bộ dữ liệu học sinh + phân công xe ra file JSON. Dùng để backup hoặc import vào backend.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-icon">⚙️</div>
+      <div class="info-title">SafeBus.engine.*</div>
+      <div class="info-desc">Truy cập trực tiếp các hàm engine: <code style="font-size:11px">getStudentRegistry()</code>, <code style="font-size:11px">getRoster(busId)</code>, <code style="font-size:11px">findBestMatch()</code>...</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  var currentMode = 'checkin';
+
+  function logCb(msg, cls) {
+    var log = document.getElementById('callback-log');
+    var d = document.createElement('div');
+    d.className = cls || 'cb-info';
+    d.textContent = '[' + new Date().toLocaleTimeString('vi-VN') + '] ' + msg;
+    log.prepend(d);
+  }
+
+  function initWidget(mode) {
+    SafeBus.destroy('safebus-demo');
+    SafeBus.init('safebus-demo', {
+      busId: 'BUS-01',
+      mode: mode,
+      modelsPath: './models',
+      onScanSuccess: function(student, event) {
+        var action = event === 'boarded' ? 'LÊN XE ⬆️' : 'XUỐNG XE ⬇️';
+        logCb('✅ onScanSuccess → ' + student.full_name + ' [' + student.student_id + '] — ' + action, 'cb-success');
+        // Nhóm bạn móc vào backend ở đây:
+        // fetch('/api/attendance', { method: 'POST', body: JSON.stringify({ studentId: student.student_id, event: event }) });
+      },
+      onAlert: function(alert) {
+        logCb('🚨 onAlert → [' + alert.severity.toUpperCase() + '] ' + alert.message, 'cb-alert');
+        // Nhóm bạn hiện popup ở đây:
+        // myApp.showNotification(alert.message, alert.severity);
+      }
+    });
+    logCb('SafeBus.init("safebus-demo", { mode: "' + mode + '", busId: "BUS-01" }) — đã gọi', 'cb-info');
+  }
+
+  function switchMode(mode, btn) {
+    currentMode = mode;
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    initWidget(mode);
+  }
+
+  function copyCode() {
+    var el = document.getElementById('code-snippet');
+    var text = el.innerText || el.textContent;
+    navigator.clipboard.writeText(text).then(function() {
+      var btn = document.querySelector('.copy-btn');
+      btn.textContent = '✅ Đã copy!';
+      setTimeout(function() { btn.textContent = '📋 Copy'; }, 2000);
+    });
+  }
+
+  // Auto-init checkin mode on load
+  window.addEventListener('load', function() {
+    initWidget('checkin');
+  });
+</script>
+</body>
+</html>

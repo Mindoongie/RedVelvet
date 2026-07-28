@@ -1,0 +1,295 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SafeBus AI – Đăng ký học sinh</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="./face-api.min.js"></script>
+<script src="./engine.js"></script>
+<style>
+:root{--primary:#6366f1;--primary-dark:#4f46e5;--primary-light:#a5b4fc;--bg:#0a0b0f;--bg2:#111318;--card:#13151f;--border:rgba(255,255,255,0.08);--text:#f1f5f9;--text2:#94a3b8;--text3:#64748b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0}
+header{background:rgba(10,11,15,.95);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:50;backdrop-filter:blur(20px)}
+.back-btn{color:var(--text2);text-decoration:none;font-size:13px;font-weight:600;padding:7px 14px;border:1px solid var(--border);border-radius:8px;transition:all .2s}
+.back-btn:hover{background:rgba(255,255,255,.05);color:var(--text)}
+header h1{font-size:20px;font-weight:800;flex:1}
+.model-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);padding:4px 10px;border:1px solid var(--border);border-radius:999px;background:var(--bg2)}
+.dot{width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0;animation:pulse-dot 1.5s infinite}
+.dot.ready{background:#22c55e;animation:none}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+main{max-width:1100px;margin:0 auto;padding:32px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;margin-bottom:24px}
+.card h2{font-size:15px;font-weight:700;color:var(--primary-light);margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+label{font-size:13px;font-weight:500;color:var(--text2)}
+input,select{padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;transition:border-color .2s;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--primary)}
+.stage{position:relative;width:100%;aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:#0a0b0f;max-width:420px}
+video,canvas.overlay{position:absolute;top:0;left:0;width:100%;height:100%}
+.flash-overlay{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .05s;border-radius:12px}
+.flash-overlay.flash{opacity:.7}
+.samples-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0}
+.sample-slot{aspect-ratio:1;border-radius:8px;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text3);background:var(--bg2);overflow:hidden;transition:all .2s}
+.sample-slot.filled{border-color:#22c55e;border-style:solid}
+.sample-slot img{width:100%;height:100%;object-fit:cover}
+.progress{height:5px;background:var(--border);border-radius:999px;overflow:hidden;margin-bottom:16px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),#10b981);border-radius:999px;transition:width .3s ease;width:0}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+button{padding:10px 18px;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+button:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 4px 16px rgba(99,102,241,.3)}
+.btn-primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(99,102,241,.4)}
+.btn-success{background:linear-gradient(135deg,#10b981,#059669);color:#fff;box-shadow:0 4px 16px rgba(16,185,129,.3)}
+.btn-success:hover:not(:disabled){transform:translateY(-1px)}
+.btn-ghost{background:rgba(255,255,255,.05);border:1.5px solid var(--border);color:var(--text2)}
+.btn-ghost:hover:not(:disabled){background:rgba(255,255,255,.1);color:var(--text)}
+.btn-danger{background:linear-gradient(135deg,#f43f5e,#e11d48);color:#fff}
+#status{margin-top:16px;padding:13px 16px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);font-size:14px;min-height:46px;display:flex;align-items:center;line-height:1.5;transition:all .25s}
+#status.loading{background:rgba(99,102,241,.1);border-color:rgba(99,102,241,.4);color:var(--primary-light)}
+#status.success{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.4);color:#6ee7b7}
+#status.warning{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.4);color:#fcd34d}
+#status.error{background:rgba(244,63,94,.1);border-color:rgba(244,63,94,.4);color:#fda4af}
+.student-table{width:100%;border-collapse:collapse;font-size:13px}
+.student-table th{text-align:left;padding:10px 12px;background:var(--bg2);color:var(--text2);font-weight:600;border-bottom:1px solid var(--border)}
+.student-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.student-table tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.badge-green{background:rgba(16,185,129,.15);color:#6ee7b7}
+.badge-blue{background:rgba(99,102,241,.15);color:var(--primary-light)}
+.assign-row{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:rgba(99,102,241,.15);color:var(--primary-light);border:1px solid rgba(99,102,241,.3)}
+.tag button{background:none;border:none;cursor:pointer;font-size:14px;padding:0 2px;color:var(--text3);min-width:0;line-height:1}
+code{background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;font-size:12px;color:var(--primary-light)}
+.instructions{background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:12px;padding:14px 16px;font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:16px}
+.instructions b{color:var(--primary-light)}
+.empty-state{text-align:center;padding:32px;color:var(--text3);font-size:14px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html" class="back-btn">← Trang chủ</a>
+  <h1>📸 Đăng ký học sinh</h1>
+  <div class="model-badge"><span class="dot" id="modelDot"></span><span id="modelText">Đang tải model...</span></div>
+</header>
+<main>
+<div class="grid">
+  <!-- LEFT: Camera + form -->
+  <div>
+    <div class="card">
+      <h2>Thông tin học sinh</h2>
+      <div class="form-group"><label>Mã học sinh *</label><input id="studentId" placeholder="VD: HS-001"/></div>
+      <div class="form-group"><label>Họ tên đầy đủ *</label><input id="fullName" placeholder="VD: Nguyễn Văn An"/></div>
+    </div>
+    <div class="card">
+      <h2>Chụp mẫu khuôn mặt (tối thiểu 3, khuyến nghị 5)</h2>
+      <div class="instructions">
+        <b>Hướng dẫn:</b> Chụp 5 tấm từ các góc: <b>nhìn thẳng, nghiêng trái, nghiêng phải, ngồi cao, ngồi thấp</b>. Phím tắt: <b>Space</b>.
+      </div>
+      <div class="stage">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="overlay" class="overlay"></canvas>
+        <div class="flash-overlay" id="flash"></div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="samples-grid" id="sampleList">
+          <div class="sample-slot" id="slot0">1</div>
+          <div class="sample-slot" id="slot1">2</div>
+          <div class="sample-slot" id="slot2">3</div>
+          <div class="sample-slot" id="slot3">4</div>
+          <div class="sample-slot" id="slot4">5</div>
+        </div>
+        <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="btn-row">
+          <button class="btn-primary" id="btnCapture" disabled>📷 Chụp mẫu (<span id="sampleCount">0</span>/5)</button>
+          <button class="btn-ghost" id="btnReset">🗑 Xóa hết</button>
+        </div>
+      </div>
+      <div id="status">Đang tải model nhận diện khuôn mặt...</div>
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn-success" id="btnRegister" disabled>✅ Lưu đăng ký</button>
+      </div>
+    </div>
+    <!-- Bus assignment for new student -->
+    <div class="card">
+      <h2>Phân công xe cho học sinh</h2>
+      <div class="assign-row">
+        <select id="assignStudentSel" style="flex:1"></select>
+        <input id="assignBusId" placeholder="Mã xe (VD: BUS-01)" style="width:130px"/>
+        <button class="btn-primary" onclick="doAssign()" style="padding:10px 14px">Phân công</button>
+      </div>
+      <div id="assignmentList" style="margin-top:16px"></div>
+    </div>
+  </div>
+  <!-- RIGHT: Student list -->
+  <div>
+    <div class="card">
+      <h2>Danh sách học sinh đã đăng ký</h2>
+      <div id="studentListArea"><div class="empty-state">Chưa có học sinh nào được đăng ký.</div></div>
+    </div>
+    <div class="card">
+      <h2>Phân công xe (tổng quan)</h2>
+      <div id="busAssignmentOverview"><div class="empty-state">Chưa có phân công xe nào.</div></div>
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn-ghost" onclick="exportData()" style="font-size:12px">📤 Xuất dữ liệu JSON</button>
+        <button class="btn-danger" onclick="if(confirm('Xóa hết dữ liệu?')){clearAllStudents();renderAll()}" style="font-size:12px">🗑 Xóa tất cả HS</button>
+      </div>
+    </div>
+  </div>
+</div>
+</main>
+<script>
+let modelReady = false;
+let capturedDescriptors = [];
+let capturedThumbs = [];
+let isCapturing = false;
+const MAX = 5;
+
+function setStatus(t,c=''){const el=document.getElementById('status');el.textContent=t;el.className=c}
+
+// Camera
+async function startCamera(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{width:480,height:360,facingMode:'user'}});
+    document.getElementById('video').srcObject=stream;
+    await new Promise(r=>(document.getElementById('video').onloadedmetadata=r));
+  }catch(e){setStatus('Lỗi camera: '+e.message,'error')}
+}
+
+async function initModels(){
+  try{
+    await loadFaceModels((msg,cls)=>setStatus(msg,cls));
+    modelReady=true;
+    document.getElementById('modelDot').classList.add('ready');
+    document.getElementById('modelText').textContent='Model sẵn sàng';
+    setStatus('Sẵn sàng chụp mẫu khuôn mặt.','success');
+    updateSampleUI();
+    startDrawLoop(document.getElementById('video'),document.getElementById('overlay'),()=>modelReady);
+  }catch(e){
+    document.getElementById('modelText').textContent='Tải model thất bại';
+    setStatus('Lỗi tải model: '+e.message,'error');
+  }
+}
+
+function updateSampleUI(){
+  const n=capturedDescriptors.length;
+  document.getElementById('sampleCount').textContent=n;
+  document.getElementById('progressFill').style.width=(n/MAX*100)+'%';
+  for(let i=0;i<MAX;i++){
+    const slot=document.getElementById('slot'+i);
+    if(i<n&&capturedThumbs[i]){
+      slot.innerHTML='<img src="'+capturedThumbs[i]+'" alt="Mau '+(i+1)+'"/>';
+      slot.classList.add('filled');
+    }else{
+      slot.innerHTML=''+(i+1);
+      slot.classList.remove('filled');
+    }
+  }
+  document.getElementById('btnCapture').disabled=!modelReady||n>=MAX;
+  document.getElementById('btnRegister').disabled=n<3;
+}
+
+async function captureSample(){
+  if(!modelReady||isCapturing)return;
+  if(capturedDescriptors.length>=MAX){setStatus('Đã đủ 5 mẫu. Bấm "Lưu đăng ký".','warning');return}
+  isCapturing=true;
+  setStatus('Đang chụp mẫu...','loading');
+  try{
+    const vid=document.getElementById('video');
+    const result=await faceapi
+      .detectSingleFace(vid,new faceapi.TinyFaceDetectorOptions({inputSize:224}))
+      .withFaceLandmarks().withFaceDescriptor();
+    if(!result){setStatus('Không phát hiện khuôn mặt. Di chuyển vào trung tâm.','warning');isCapturing=false;return}
+    const tmp=document.createElement('canvas');
+    tmp.width=vid.videoWidth;tmp.height=vid.videoHeight;
+    tmp.getContext('2d').drawImage(vid,0,0);
+    capturedThumbs.push(tmp.toDataURL('image/jpeg',.7));
+    capturedDescriptors.push(Array.from(result.descriptor));
+    const fl=document.getElementById('flash');
+    fl.classList.add('flash');setTimeout(()=>fl.classList.remove('flash'),150);
+    const n=capturedDescriptors.length;
+    setStatus(n<3?'Đã chụp '+n+'/5 – cần thêm '+(3-n)+' mẫu':n<MAX?'Đã chụp '+n+'/5. Có thể lưu hoặc chụp thêm.':'Đủ 5 mẫu! Bấm "Lưu đăng ký".','success');
+    updateSampleUI();
+  }catch(e){setStatus('Lỗi: '+e.message,'error')}
+  isCapturing=false;
+}
+
+document.getElementById('btnCapture').onclick=captureSample;
+document.getElementById('btnReset').onclick=()=>{capturedDescriptors=[];capturedThumbs=[];updateSampleUI();setStatus('Đã xóa mẫu.','')};
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&!e.target.matches('input,select')){e.preventDefault();captureSample()}});
+
+document.getElementById('btnRegister').onclick=async()=>{
+  const sid=document.getElementById('studentId').value.trim();
+  const name=document.getElementById('fullName').value.trim();
+  if(!sid||!name){setStatus('Nhập đầy đủ Mã học sinh và Họ tên.','warning');return}
+  if(capturedDescriptors.length<3){setStatus('Cần ít nhất 3 mẫu khuôn mặt.','warning');return}
+  const s=registerStudent(sid,name,capturedDescriptors);
+  setStatus('✅ Đăng ký thành công: '+name+' ('+s.descriptors.length+' mẫu)','success');
+  document.getElementById('studentId').value='';
+  document.getElementById('fullName').value='';
+  capturedDescriptors=[];capturedThumbs=[];
+  updateSampleUI();renderAll();
+};
+
+// Bus assignment
+function doAssign(){
+  const sel=document.getElementById('assignStudentSel');
+  const busId=document.getElementById('assignBusId').value.trim();
+  if(!sel.value||!busId){alert('Chọn học sinh và nhập mã xe');return}
+  const sid=sel.value;
+  const sname=getStudentRegistry().find(s=>s.student_id===sid)?.full_name||sid;
+  assignStudentToBus(busId,sid,sname);
+  renderAll();
+}
+
+function renderStudentDropdown(){
+  const sel=document.getElementById('assignStudentSel');
+  const list=getStudentRegistry();
+  sel.innerHTML=list.length?list.map(s=>'<option value="'+s.student_id+'">'+s.full_name+' ('+s.student_id+')</option>').join(''):'<option value="">-- Chưa có học sinh --</option>';
+}
+
+function renderStudentList(){
+  const list=getStudentRegistry();
+  const area=document.getElementById('studentListArea');
+  if(!list.length){area.innerHTML='<div class="empty-state">Chưa có học sinh nào.</div>';return}
+  area.innerHTML='<table class="student-table"><thead><tr><th>#</th><th>Mã HS</th><th>Họ tên</th><th>Mẫu KM</th><th></th></tr></thead><tbody>'+
+    list.map((s,i)=>'<tr><td>'+(i+1)+'</td><td><code>'+s.student_id+'</code></td><td><b>'+s.full_name+'</b></td><td><span class="badge badge-green">'+s.descriptors.length+' mẫu</span></td><td><button class="btn-danger" style="padding:4px 10px;font-size:12px" onclick="deleteStudent(\''+s.student_id+'\');renderAll()">Xóa</button></td></tr>').join('')+
+    '</tbody></table>';
+}
+
+function renderBusAssignment(){
+  const a=getBusAssignments();
+  const keys=Object.keys(a);
+  const area=document.getElementById('busAssignmentOverview');
+  const al=document.getElementById('assignmentList');
+  if(!keys.length){area.innerHTML='<div class="empty-state">Chưa có phân công xe nào.</div>';if(al)al.innerHTML='';return}
+  area.innerHTML=keys.map(busId=>{
+    const students=a[busId];
+    return '<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:700;color:var(--primary-light);margin-bottom:8px">🚌 '+busId+'</div>'+
+      (students.length?students.map(s=>'<span class="tag">'+s.full_name+'<button onclick="removeStudentFromBus(\''+busId+'\',\''+s.student_id+'\');renderAll()">×</button></span>').join(' '):'<span style="color:var(--text3);font-size:13px">Chưa có học sinh</span>')+
+      '</div>';
+  }).join('');
+  if(al)al.innerHTML=area.innerHTML;
+}
+
+function renderAll(){renderStudentList();renderStudentDropdown();renderBusAssignment()}
+
+function exportData(){
+  const data={students:getStudentRegistry(),assignments:getBusAssignments()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='safebus_data.json';a.click();
+  URL.revokeObjectURL(url);
+}
+
+(async()=>{
+  renderAll();
+  await startCamera();
+  await initModels();
+})();
+</script>
+</body>
+</html>
