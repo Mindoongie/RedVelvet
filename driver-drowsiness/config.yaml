@@ -104,7 +104,12 @@ layer2:
 
   gat_dau:
     nguong_pitch_do: 20          # pitch chúi xuống vượt ngưỡng này bắt đầu tính là "gật"
-    hoi_phuc_toi_da_giay: 2.0    # phải hồi phục (pitch < ngưỡng) trong khoảng này mới tính 1 sự kiện gật
+    toi_thieu_giu_giay: 1.0      # giữ chúi liên tục >= khoảng này -> tính 1 sự kiện NGAY, KHÔNG chờ ngẩng lên.
+                                  # Đầu gục xuống rồi nằm im (ca nguy hiểm nhất) trước đây không được ghi nhận
+                                  # gì cả vì bộ đếm cũ chỉ chốt lúc hồi phục.
+    hoi_phuc_toi_da_giay: 4.0    # đường thứ hai, cho cú gật nhanh chưa đủ toi_thieu_giu_giay: hồi phục
+                                  # (pitch < ngưỡng) trong khoảng này vẫn tính 1 sự kiện. Nới từ 2.0 -> 4.0
+                                  # vì gật vì buồn ngủ rơi chậm hơn nhiều so với cú lắc đầu của người tỉnh.
     cua_so_phut: 3               # chỉ số gật/phút tính trên cửa sổ trượt này
     dao_dau_pitch: false         # đảo dấu pitch nếu camera/model cho chiều ngược (hiệu chỉnh theo thiết bị)
 

@@ -112,6 +112,7 @@ def chay_pipeline(video_path: str, cfg: dict, nguon: str | None = None) -> KetQu
         nguong_pitch_do=l2_cfg["gat_dau"]["nguong_pitch_do"],
         hoi_phuc_toi_da_giay=l2_cfg["gat_dau"]["hoi_phuc_toi_da_giay"],
         cua_so_phut=l2_cfg["gat_dau"]["cua_so_phut"],
+        toi_thieu_giu_giay=l2_cfg["gat_dau"].get("toi_thieu_giu_giay", 1.0),
     )
     dao_dau_pitch = l2_cfg["gat_dau"].get("dao_dau_pitch", False)
 
@@ -159,6 +160,8 @@ def chay_pipeline(video_path: str, cfg: dict, nguon: str | None = None) -> KetQu
                 ket_qua.latencies_pipeline_ms.append(event1.latency_ms)
 
             if result is None:
+                # Giống main.py: tạm dừng đồng hồ chúi đầu thay vì tính cả khoảng mất mặt.
+                nod_detector.bao_mat_landmark(t)
                 continue
 
             mar = mouth_aspect_ratio(result.landmarks, result.image_width, result.image_height)

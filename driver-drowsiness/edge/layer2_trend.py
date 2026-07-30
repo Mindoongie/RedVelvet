@@ -99,37 +99,110 @@ class YawnDetector:
 
 
 class NodDetector:
-    """Gật đầu: pitch vượt ngưỡng rồi hồi lại trong <= hoi_phuc_toi_da_giay = 1 sự kiện."""
+    """Gật đầu — đếm 1 sự kiện cho mỗi episode pitch vượt ngưỡng, theo MỘT trong hai đường:
 
-    def __init__(self, nguong_pitch_do: float, hoi_phuc_toi_da_giay: float, cua_so_phut: float):
+    1. GIỮ ĐỦ LÂU: pitch chúi liên tục >= `toi_thieu_giu_giay` -> đếm NGAY, không
+       chờ ngẩng lên. Bản cũ chỉ chốt sự kiện ở nhánh hồi phục, nên đầu gục xuống
+       rồi nằm im — ca nguy hiểm nhất — không ghi nhận được gì cả.
+    2. HỒI PHỤC KỊP: pitch trở lại dưới ngưỡng trong <= `hoi_phuc_toi_da_giay`
+       -> đếm lúc ngẩng lên. Giữ đường cũ cho cú gật nhanh, nông chưa đủ (1).
+
+    Mỗi episode đếm tối đa 1 lần (`_da_dem_episode`), nên hai đường trên không
+    cộng trùng, và `ghi_nhan_gat_tu_su_kien_ngoai()` cũng tôn trọng cờ này.
+
+    Mất landmark: main.py gọi `bao_mat_landmark()` mỗi frame mất mặt, khoảng
+    trống đó bị TRỪ khỏi thời lượng chúi. Ngược với Lớp 1 — nơi gap được cộng
+    vào vì mắt đang nhắm lúc mất mặt thì vẫn coi như đang nhắm; ở đây gap không
+    phải bằng chứng đầu vẫn đang chúi, và tính vào sẽ thổi `thoi_luong` vượt
+    `hoi_phuc_toi_da_giay` khiến cú gật bị vứt oan.
+    """
+
+    def __init__(self, nguong_pitch_do: float, hoi_phuc_toi_da_giay: float, cua_so_phut: float,
+                 toi_thieu_giu_giay: float = 1.0):
         self.nguong_pitch_do = nguong_pitch_do
         self.hoi_phuc_toi_da_giay = hoi_phuc_toi_da_giay
+        self.toi_thieu_giu_giay = toi_thieu_giu_giay
         self.window_s = cua_so_phut * 60.0
 
         self._dang_vuot: bool = False
         self._t_vuot_nguong: float | None = None
+        self._da_dem_episode: bool = False
+        self._tong_gap_giay: float = 0.0
+        self._t_mat_landmark_tu: float | None = None
         self._events: list[float] = []
         self._t_dau_tien: float | None = None
 
     def update(self, pitch_deg: float, t_capture: float) -> bool:
         if self._t_dau_tien is None:
             self._t_dau_tien = t_capture
+        self._chot_gap(t_capture)
 
-        vuot_nguong = pitch_deg >= self.nguong_pitch_do
-
-        if vuot_nguong:
+        if pitch_deg >= self.nguong_pitch_do:
             if not self._dang_vuot:
                 self._dang_vuot = True
                 self._t_vuot_nguong = t_capture
+                self._da_dem_episode = False
+                self._tong_gap_giay = 0.0
+            if self._da_dem_episode:
+                return False
+            if self._thoi_luong(t_capture) < self.toi_thieu_giu_giay:
+                return False
+            self._da_dem_episode = True          # đường 1
+            self._events.append(t_capture)
+            return True
+
+        if not self._dang_vuot:
             return False
 
-        if self._dang_vuot:
-            thoi_luong = t_capture - self._t_vuot_nguong
-            self._dang_vuot = False
-            if thoi_luong <= self.hoi_phuc_toi_da_giay:
-                self._events.append(t_capture)
-                return True
-        return False
+        thoi_luong = self._thoi_luong(t_capture)
+        da_dem = self._da_dem_episode
+        self._reset_episode()
+        if da_dem or thoi_luong > self.hoi_phuc_toi_da_giay:
+            return False
+        self._events.append(t_capture)           # đường 2
+        return True
+
+    def bao_mat_landmark(self, t_capture: float) -> None:
+        """Gọi MỖI FRAME không có landmark. Đồng hồ episode tạm dừng: mốc bắt
+        đầu khoảng trống được ghi lại, `_chot_gap()` cộng dồn khi landmark quay
+        lại. Ngoài episode chúi đầu thì không cần theo dõi gì."""
+        if not self._dang_vuot:
+            return
+        if self._t_mat_landmark_tu is None:
+            self._t_mat_landmark_tu = t_capture
+
+    def ghi_nhan_gat_tu_su_kien_ngoai(self, t_capture: float) -> bool:
+        """main.py gọi khi FaceLossTracker phát `mat_mat_sau_chui_dau` — mất
+        landmark ngay lúc pitch đang chúi quá ngưỡng LÀ bằng chứng của một cú
+        gật, nhưng `update()` không bao giờ nhìn thấy frame ngẩng lên nên đường
+        (2) không thể chốt. Trả về True nếu thực sự cộng thêm 1 sự kiện."""
+        if self._t_dau_tien is None:
+            self._t_dau_tien = t_capture
+        if self._da_dem_episode:
+            return False
+        self._da_dem_episode = True
+        self._events.append(t_capture)
+        return True
+
+    def _chot_gap(self, t_capture: float) -> None:
+        """Landmark khả dụng trở lại — cộng khoảng vừa mất vào tổng gap của episode."""
+        if self._t_mat_landmark_tu is None:
+            return
+        self._tong_gap_giay += max(0.0, t_capture - self._t_mat_landmark_tu)
+        self._t_mat_landmark_tu = None
+
+    def _thoi_luong(self, t_capture: float) -> float:
+        """Thời lượng đầu đã chúi, ĐÃ TRỪ các khoảng mất landmark."""
+        if self._t_vuot_nguong is None:
+            return 0.0
+        return max(0.0, t_capture - self._t_vuot_nguong - self._tong_gap_giay)
+
+    def _reset_episode(self) -> None:
+        self._dang_vuot = False
+        self._t_vuot_nguong = None
+        self._da_dem_episode = False
+        self._tong_gap_giay = 0.0
+        self._t_mat_landmark_tu = None
 
     def su_kien_tren_phut(self, now: float) -> float:
         self._events = [t for t in self._events if now - t <= self.window_s]
@@ -203,6 +276,7 @@ class Layer2Trend:
             nguong_pitch_do=gat_cfg["nguong_pitch_do"],
             hoi_phuc_toi_da_giay=gat_cfg["hoi_phuc_toi_da_giay"],
             cua_so_phut=gat_cfg["cua_so_phut"],
+            toi_thieu_giu_giay=gat_cfg.get("toi_thieu_giu_giay", 1.0),
         )
         self.dao_dau_pitch = gat_cfg.get("dao_dau_pitch", False)
 
@@ -217,6 +291,18 @@ class Layer2Trend:
 
     def bao_layer1_event(self, t_capture: float) -> None:
         self._layer1_event_times.append(t_capture)
+
+    def bao_mat_landmark(self, t_capture: float) -> None:
+        """Gọi mỗi frame mất landmark — khi đó `update()` KHÔNG chạy, nên bộ đếm
+        gật cần được báo riêng để tạm dừng đồng hồ. PERCLOS và ngáp không cần:
+        cả hai chỉ tích luỹ từ chính các frame khả dụng."""
+        self.nod_detector.bao_mat_landmark(t_capture)
+
+    def bao_gat_tu_mat_mat(self, t_capture: float) -> bool:
+        """Cộng 1 sự kiện gật từ `mat_mat_sau_chui_dau` (đầu chúi quá ngưỡng rồi
+        landmark rớt). Trả về True nếu thực sự cộng — False khi episode chúi đầu
+        hiện tại đã được `update()` đếm rồi, tránh cộng trùng."""
+        return self.nod_detector.ghi_nhan_gat_tu_su_kien_ngoai(t_capture)
 
     def update(
         self,

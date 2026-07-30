@@ -204,6 +204,9 @@ def run(config_path: str = "config.yaml", tai_xe_id_override: str | None = None)
                 if danh_gia.kha_dung:
                     face_loss_tracker.cap_nhat_kha_dung(frame.t_capture, pitch)
                 else:
+                    # Lớp 2 không chạy frame này, nên bộ đếm gật phải được báo riêng
+                    # để tạm dừng đồng hồ chúi đầu thay vì tính cả khoảng mất mặt.
+                    layer2.bao_mat_landmark(frame.t_capture)
                     fl_event = face_loss_tracker.cap_nhat_mat_landmark(frame.t_capture)
                     if fl_event is not None:
                         if fl_event.loai == "khong_kha_dung":
@@ -212,6 +215,11 @@ def run(config_path: str = "config.yaml", tai_xe_id_override: str | None = None)
                         elif fl_event.loai == "mat_mat_sau_chui_dau":
                             print(f"[coverage] MAT_MAT_SAU_CHUI_DAU — mất landmark ngay sau khi pitch chúi "
                                   f"{fl_event.pitch_truoc_do:.1f}° — phát sự kiện mức 2.")
+                            # Cộng vào gat_phut BẤT KỂ cooldown sự kiện: đây là phép đo,
+                            # không phải cảnh báo — chặn nó theo cooldown sẽ làm hụt chỉ số.
+                            if layer2.bao_gat_tu_mat_mat(frame.t_capture):
+                                print("[layer2] Cú gật này được cộng vào gat_phut — "
+                                      "update() không bao giờ thấy frame ngẩng lên.")
                             if alert_policy.cho_phep_su_kien_dac_biet("mat_mat_sau_chui_dau"):
                                 anh_path = _luu_anh_minh_chung(frame.image, thu_muc_anh, tien_to="mat_mat_sau_chui_dau")
                                 chi_so_dac_biet = {"pitch_truoc_khi_mat": fl_event.pitch_truoc_do}

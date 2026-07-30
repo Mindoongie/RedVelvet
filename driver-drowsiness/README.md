@@ -1,4 +1,4 @@
-# Cảnh báo hành vi mất an toàn — ngủ gật (GĐ1 + demo, kiến trúc v2)
+# Cảnh báo hành vi mất an toàn — ngủ gật (GĐ1 + demo)
 
 Hệ thống edge-first: toàn bộ phân tích chạy cục bộ trên thiết bị trong xe
 ("edge"), server chỉ nhận sự kiện. Bản v2 gồm:
@@ -134,9 +134,18 @@ config): ngưỡng VÀO-nhắm và RA-nhắm khác nhau, chống rung khi tín h
 - Đang trong chuỗi nhắm mắt mà mất landmark ≤ 1.5s
   (`mat_mat_landmark.toi_da_giu_chuoi_giay`) → bộ đếm **KHÔNG reset** (coi
   như nghi ngờ vẫn đang nhắm); mất lâu hơn mới reset chuỗi.
+- Đang trong chuỗi chúi đầu mà mất landmark → đồng hồ gật **tạm dừng**, khoảng
+  trống bị TRỪ khỏi thời lượng chúi (`NodDetector.bao_mat_landmark`). Ngược
+  chiều với Lớp 1 ở trên: mắt nhắm lúc mất mặt thì vẫn coi như đang nhắm, còn
+  mất mặt KHÔNG phải bằng chứng đầu vẫn đang chúi — tính vào sẽ thổi thời
+  lượng vượt hạn hồi phục và làm rơi oan cú gật.
 - Mất landmark NGAY sau khi pitch đang chúi xuống vượt ngưỡng gật đầu → sự
   kiện `mat_mat_sau_chui_dau` ở mức 2, kèm ảnh — mẫu hình mất landmark nguy
   hiểm nhất (đầu gục đúng lúc landmark rớt) không được phép trôi qua im lặng.
+  Sự kiện này **cũng cộng 1 vào `gat_phut`**: `update()` không bao giờ nhìn
+  thấy frame ngẩng lên nên tự nó không chốt được, mà đây đã là bằng chứng của
+  một cú gật. Phép cộng chạy bất kể cooldown cảnh báo (đây là phép đo, không
+  phải cảnh báo) và tôn trọng quy tắc 1-lần-mỗi-episode nên không cộng trùng.
 
 ---
 
@@ -253,6 +262,18 @@ giá trị v2 đều có default tương thích ngược.
 Nếu test trên máy bạn thấy "Pitch" trên overlay đổi dấu SAI chiều khi cúi đầu
 (âm khi lẽ ra phải dương), đặt `layer2.gat_dau.dao_dau_pitch: true` trong
 `config.yaml` (không cần sửa code).
+
+**Hai đường đếm gật đầu** (`layer2.gat_dau`) — mỗi episode pitch vượt
+`nguong_pitch_do` chỉ đếm tối đa 1 lần, hai đường không cộng trùng:
+
+| Đường | Điều kiện | Dành cho |
+|---|---|---|
+| Giữ đủ lâu | pitch chúi liên tục ≥ `toi_thieu_giu_giay` (1.0s) → đếm **ngay**, không chờ ngẩng lên | Đầu gục xuống rồi nằm im |
+| Hồi phục kịp | pitch trở lại dưới ngưỡng trong ≤ `hoi_phuc_toi_da_giay` (4.0s) → đếm lúc ngẩng lên | Cú gật nhanh, nông |
+
+Bản trước chỉ có đường thứ hai với hạn 2.0s, nên gật vì buồn ngủ — rơi chậm và
+thường **nằm luôn ở dưới** — không ghi nhận được gì cả. Nghịch lý: càng buồn
+ngủ thật thì càng ít khả năng được đếm.
 
 ---
 
