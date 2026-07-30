@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# dữ liệu runtime (event DB, ảnh minh chứng, cache mức rủi ro nền)
+data/*
+!data/.gitkeep
+
+# model tải về (xem README để tải lại)
+models/*.task
+models/*.onnx
+
+# v2: profile cá nhân theo tài xế, báo cáo phiên/eval tự sinh — dữ liệu runtime
+profiles/
+reports/
+
+# venv
+.venv/
+venv/
