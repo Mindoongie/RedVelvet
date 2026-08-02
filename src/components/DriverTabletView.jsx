@@ -112,6 +112,11 @@ export default function DriverTabletView({ simulations }) {
 
   // ─── Trạng thái Chuyến xe & Điểm danh ──────────────────────────────────────
   const [isTripActive, setIsTripActive] = useState(false);
+  const isTripActiveRef = useRef(isTripActive);
+  useEffect(() => {
+    isTripActiveRef.current = isTripActive;
+  }, [isTripActive]);
+
   const [scanMode, setScanMode] = useState('boarded'); // 'boarded' (lên xe) | 'alighted' (xuống xe)
   const [tripRosterState, setTripRosterState] = useState(null);
   
@@ -240,12 +245,14 @@ export default function DriverTabletView({ simulations }) {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 320, height: 240, facingMode: 'user' }
       });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        setCameraActive(true);
-        startFaceScanLoop();
-      }
+      setCameraActive(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          streamRef.current = stream;
+          startFaceScanLoop();
+        }
+      }, 50);
     } catch (err) {
       alert('Không thể truy cập camera: ' + err.message);
     }
@@ -277,7 +284,7 @@ export default function DriverTabletView({ simulations }) {
         const canvas = canvasRef.current;
         const faceapi = window.faceapi;
 
-        if (faceapi && isTripActive) {
+        if (faceapi && isTripActiveRef.current) {
           const result = await faceapi.detectSingleFace(
             video,
             new faceapi.TinyFaceDetectorOptions({ inputSize: 224 })
@@ -343,40 +350,7 @@ export default function DriverTabletView({ simulations }) {
     drawLoopRef.current = requestAnimationFrame(detectAndScan);
   };
 
-  // Mock AI scan for testing without camera
-  const triggerMockScan = () => {
-    if (!isTripActive || !tripRosterState) {
-      alert('Vui lòng Bắt đầu chuyến xe trước!');
-      return;
-    }
-    const entries = tripRosterState.entries;
-    
-    // Find expected students to check in
-    const targetStatus = scanMode === 'boarded' ? 'not_boarded' : 'on_bus';
-    const candidates = entries.filter(e => e.status === targetStatus);
 
-    if (candidates.length === 0) {
-      alert(`Tất cả học sinh đã ${scanMode === 'boarded' ? 'lên xe' : 'xuống xe'}!`);
-      return;
-    }
-
-    // Pick random candidate
-    const student = candidates[Math.floor(Math.random() * candidates.length)];
-    const scanRes = registerScan('BUS-01', student.student_id, scanMode === 'boarded' ? 'boarded' : 'alighted');
-    
-    if (scanRes.success) {
-      playBeepSuccess();
-      setLastScanResult({
-        student_id: student.student_id,
-        full_name: student.full_name,
-        confidence: Math.round(92 + Math.random() * 7),
-        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        success: true,
-        isMock: true
-      });
-      setTripRosterState(scanRes.roster);
-    }
-  };
 
   useEffect(() => {
     return () => {
@@ -538,44 +512,65 @@ export default function DriverTabletView({ simulations }) {
             overflow: 'hidden',
             border: '1px solid var(--border-card)'
           }}>
-            {cameraActive ? (
-              <>
-                <video 
-                  ref={videoRef} 
-                  autoPlay 
-                  playsInline 
-                  muted 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                />
-                <canvas 
-                  ref={canvasRef} 
-                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} 
-                />
-                {/* Mode Tag */}
-                <div style={{ 
-                  position: 'absolute', top: 8, left: 8, 
-                  background: scanMode === 'boarded' ? 'rgba(5,150,105,0.9)' : 'rgba(217,119,6,0.9)',
-                  color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700 
-                }}>
-                  ĐANG ĐIỂM DANH: {scanMode === 'boarded' ? 'LÊN XE' : 'XUỐNG XE'}
-                </div>
-              </>
-            ) : (
+            {/* video element is always rendered to prevent null ref on startWebcam */}
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              playsInline 
+              muted 
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'cover',
+                display: cameraActive ? 'block' : 'none'
+              }} 
+            />
+            <canvas 
+              ref={canvasRef} 
+              style={{ 
+                position: 'absolute', 
+                top: 0, 
+                left: 0, 
+                width: '100%', 
+                height: '100%',
+                display: cameraActive ? 'block' : 'none'
+              }} 
+            />
+
+            {cameraActive && (
+              <div style={{ 
+                position: 'absolute', top: 8, left: 8, 
+                background: scanMode === 'boarded' ? 'rgba(5,150,105,0.9)' : 'rgba(217,119,6,0.9)',
+                color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700 
+              }}>
+                ĐANG ĐIỂM DANH: {scanMode === 'boarded' ? 'LÊN XE' : 'XUỐNG XE'}
+              </div>
+            )}
+
+            {!cameraActive && (
               <div style={{ 
                 width: '100%', height: '100%', 
                 display: 'flex', flexDirection: 'column', 
                 alignItems: 'center', justifyContent: 'center', 
-                color: 'var(--text-muted)', gap: '8px',
+                color: '#94a3b8', gap: '8px',
                 textAlign: 'center', padding: '16px'
               }}>
-                <Camera size={26} />
-                <div style={{ fontSize: '0.72rem' }}>{modelMsg}</div>
+                <Camera size={26} color="var(--primary-teal)" />
+                <div style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>{modelMsg}</div>
                 {modelStatus !== 'ready' ? (
                   <button 
                     onClick={initAiModels}
                     disabled={modelStatus === 'loading'}
-                    className="btn-primary"
-                    style={{ fontSize: '0.72rem', padding: '6px 12px' }}
+                    style={{ 
+                      fontSize: '0.72rem', 
+                      padding: '6px 12px',
+                      background: 'linear-gradient(135deg, var(--primary-teal), var(--accent-cyan))',
+                      border: 'none',
+                      color: '#ffffff',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: 600
+                    }}
                   >
                     {modelStatus === 'loading' ? <RefreshCw size={12} className="spin" /> : 'Kích Hoạt AI'}
                   </button>
@@ -583,8 +578,21 @@ export default function DriverTabletView({ simulations }) {
                   <button 
                     onClick={startWebcam}
                     disabled={!isTripActive}
-                    className="btn-secondary"
-                    style={{ fontSize: '0.72rem', padding: '6px 12px', opacity: isTripActive ? 1 : 0.6 }}
+                    style={{ 
+                      fontSize: '0.72rem', 
+                      padding: '6px 12px', 
+                      background: isTripActive ? 'rgba(6, 182, 212, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                      border: isTripActive ? '1px solid var(--accent-cyan)' : '1px solid rgba(255,255,255,0.1)',
+                      color: isTripActive ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.3)',
+                      borderRadius: '6px',
+                      cursor: isTripActive ? 'pointer' : 'not-allowed',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontWeight: 600,
+                      opacity: isTripActive ? 1 : 0.5,
+                      transition: 'all 0.2s ease'
+                    }}
                   >
                     Mở Camera Điểm Danh
                   </button>
@@ -594,24 +602,14 @@ export default function DriverTabletView({ simulations }) {
           </div>
 
           {/* Action buttons */}
-          {isTripActive && (
+          {isTripActive && cameraActive && (
             <div style={{ display: 'flex', gap: '8px' }}>
-              {cameraActive && (
-                <button 
-                  onClick={stopWebcam}
-                  className="btn-secondary"
-                  style={{ flex: 1, fontSize: '0.72rem', padding: '6px', justifyContent: 'center' }}
-                >
-                  Tắt Cam
-                </button>
-              )}
               <button 
-                onClick={triggerMockScan}
-                className="btn-primary"
-                style={{ flex: 2, fontSize: '0.72rem', padding: '6px', justifyContent: 'center', background: 'linear-gradient(135deg, var(--primary-teal), var(--accent-cyan))' }}
+                onClick={stopWebcam}
+                className="btn-secondary"
+                style={{ flex: 1, fontSize: '0.72rem', padding: '6px', justifyContent: 'center' }}
               >
-                <RefreshCw size={12} />
-                <span>Giả Lập Quét AI Mặt</span>
+                Tắt Camera Điểm Danh
               </button>
             </div>
           )}
