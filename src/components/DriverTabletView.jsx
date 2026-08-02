@@ -45,6 +45,8 @@ export default function DriverTabletView({ simulations }) {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  const realtimeMetricsRef = useRef({ ear: null, mar: null, pitch: null });
+
   // Run periodic Drowsiness check via the DrowsinessEngine
   useEffect(() => {
     const interval = setInterval(() => {
@@ -53,7 +55,12 @@ export default function DriverTabletView({ simulations }) {
       let marInput = 0.10;
       let pitchInput = 0;
 
-      if (simulations.drowsiness) {
+      const realMetrics = realtimeMetricsRef.current;
+      if (realMetrics.ear !== null) {
+        earInput = realMetrics.ear;
+        marInput = realMetrics.mar;
+        pitchInput = realMetrics.pitch;
+      } else if (simulations.drowsiness) {
         // Driver is simulated as drowsy: cycle between eyes closed, yawns and head nods
         const timeFactor = Date.now() % 15000;
         if (timeFactor < 5000) {
@@ -135,13 +142,15 @@ export default function DriverTabletView({ simulations }) {
   const lastScannedTimeRef = useRef(null);
   const lastUnknownTimeRef = useRef(null);
 
-  // Load current trip status on mount
+  // Load current trip status and auto load face models on mount
   useEffect(() => {
     const current = getRoster('BUS-01');
     if (current) {
       setIsTripActive(true);
       setTripRosterState(rosterSummary(current));
     }
+    // Auto load AI models so they are ready for both driver monitoring and student attendance
+    initAiModels();
   }, []);
 
   const playBeepAlert = () => {
@@ -442,7 +451,15 @@ export default function DriverTabletView({ simulations }) {
           </div>
 
           <div style={{ height: '210px' }}>
-            <CameraAiOverlay mode="driver" isDrowsy={isDrowsy} ear={earValue} mar={marValue} />
+            <CameraAiOverlay 
+              mode="driver" 
+              isDrowsy={isDrowsy} 
+              ear={earValue} 
+              mar={marValue} 
+              onMetricsUpdate={(ear, mar, pitch) => {
+                realtimeMetricsRef.current = { ear, mar, pitch };
+              }}
+            />
           </div>
 
           {/* Indices */}

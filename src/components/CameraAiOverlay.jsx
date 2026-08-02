@@ -1,26 +1,172 @@
 import React from 'react';
 import { Camera, Video, AlertCircle, RefreshCw } from 'lucide-react';
 
+// Distance calculation utility
+function distance(p1, p2) {
+  return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+}
+
+// Calculate EAR (Eye Aspect Ratio) from 68 landmarks
+function calculateEAR(landmarks) {
+  // Left eye: indices 36 to 41
+  const l1 = landmarks[36];
+  const l2 = landmarks[37];
+  const l3 = landmarks[38];
+  const l4 = landmarks[39];
+  const l5 = landmarks[40];
+  const l6 = landmarks[41];
+  const leftEAR = (distance(l2, l6) + distance(l3, l5)) / (2.0 * distance(l1, l4));
+
+  // Right eye: indices 42 to 47
+  const r1 = landmarks[42];
+  const r2 = landmarks[43];
+  const r3 = landmarks[44];
+  const r4 = landmarks[45];
+  const r5 = landmarks[46];
+  const r6 = landmarks[47];
+  const rightEAR = (distance(r2, r6) + distance(r3, r5)) / (2.0 * distance(r1, r4));
+
+  return (leftEAR + rightEAR) / 2.0;
+}
+
+// Calculate MAR (Mouth Aspect Ratio) from 68 landmarks
+function calculateMAR(landmarks) {
+  // Inner lip landmarks: 60 to 67
+  const p_left = landmarks[60];
+  const p_top = landmarks[62];
+  const p_right = landmarks[64];
+  const p_bottom = landmarks[66];
+
+  const horizontal = distance(p_left, p_right);
+  const vertical = distance(p_top, p_bottom);
+
+  if (horizontal === 0) return 0.0;
+  return vertical / horizontal;
+}
+
+// Estimate Pitch angle (head nodding) from 68 landmarks
+function calculatePitch(landmarks) {
+  const bridge = landmarks[27];
+  const tip = landmarks[30];
+  const chin = landmarks[8];
+
+  const d1 = Math.abs(bridge.y - tip.y);
+  const d2 = Math.abs(bridge.y - chin.y);
+  if (d2 === 0) return 0;
+  const ratio = d1 / d2;
+
+  // Straight is ~0.35. Compressed vertical ratio (< 0.28) implies head tilt downwards
+  if (ratio < 0.28) {
+    return 25; // Map to 25 degrees
+  }
+  return 0;
+}
+
 export default function CameraAiOverlay({ 
   mode = 'driver', // 'driver' | 'attendance'
   isDrowsy = false, 
   ear = 0.28,
   mar = 0.12,
+  onMetricsUpdate,
   onStudentRecognized
 }) {
   const videoRef = React.useRef(null);
+  const canvasRef = React.useRef(null);
+  const detectLoopRef = React.useRef(null);
+
   const [useWebcam, setUseWebcam] = React.useState(false);
   const [webcamError, setWebcamError] = React.useState(null);
 
-  // Toggle Webcam vs Synthetic AI Simulation stream
+  // Real-time face-api.js frame-by-frame loop for Driver camera
+  const startFaceDetectLoop = () => {
+    const detect = async () => {
+      if (videoRef.current && videoRef.current.readyState >= 2 && canvasRef.current) {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        const faceapi = window.faceapi;
+
+        if (faceapi) {
+          try {
+            const result = await faceapi.detectSingleFace(
+              video,
+              new faceapi.TinyFaceDetectorOptions({ inputSize: 160 })
+            ).withFaceLandmarks();
+
+            const ctx = canvas.getContext('2d');
+            const dims = faceapi.matchDimensions(canvas, video, true);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (result) {
+              // Draw real landmarks & bounding box
+              const resized = faceapi.resizeResults(result, dims);
+              const boxColor = isDrowsy ? '#ef4444' : '#06b6d4';
+              const { x, y, width, height } = resized.detection.box;
+
+              // Draw Face Reticle Box
+              ctx.strokeStyle = boxColor;
+              ctx.lineWidth = 2;
+              ctx.strokeRect(x, y, width, height);
+
+              // Draw eye landmarks (dots 36 to 47)
+              const landmarks = resized.landmarks.positions;
+              ctx.fillStyle = isDrowsy ? '#ef4444' : '#10b981';
+              for (let i = 36; i < 48; i++) {
+                ctx.beginPath();
+                ctx.arc(landmarks[i].x, landmarks[i].y, 2, 0, 2 * Math.PI);
+                ctx.fill();
+              }
+
+              // Draw inner mouth landmarks (dots 60 to 67)
+              ctx.fillStyle = '#f59e0b';
+              for (let i = 60; i < 68; i++) {
+                ctx.beginPath();
+                ctx.arc(landmarks[i].x, landmarks[i].y, 2, 0, 2 * Math.PI);
+                ctx.fill();
+              }
+
+              // Calculate actual EAR, MAR, Pitch from RAW un-resized positions
+              const rawLandmarks = result.landmarks.positions;
+              const computedEar = calculateEAR(rawLandmarks);
+              const computedMar = calculateMAR(rawLandmarks);
+              const computedPitch = calculatePitch(rawLandmarks);
+
+              if (onMetricsUpdate) {
+                onMetricsUpdate(computedEar, computedMar, computedPitch);
+              }
+            } else {
+              // No face detected, revert to null so parent uses mock simulation / awake default
+              if (onMetricsUpdate) {
+                onMetricsUpdate(null, null, null);
+              }
+            }
+          } catch (err) {
+            console.warn("Face detect loop error:", err);
+          }
+        }
+      }
+      detectLoopRef.current = requestAnimationFrame(detect);
+    };
+    detectLoopRef.current = requestAnimationFrame(detect);
+  };
+
+  const stopFaceDetectLoop = () => {
+    if (detectLoopRef.current) {
+      cancelAnimationFrame(detectLoopRef.current);
+      detectLoopRef.current = null;
+    }
+  };
+
   const startWebcam = async () => {
     try {
       setWebcamError(null);
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setUseWebcam(true);
-      }
+      setUseWebcam(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          startFaceDetectLoop();
+        }
+      }, 50);
     } catch (err) {
       console.warn("Webcam access error:", err);
       setWebcamError("Không thể truy cập Webcam thiết bị. Đang dùng AI Camera Simulator.");
@@ -29,17 +175,28 @@ export default function CameraAiOverlay({
   };
 
   const stopWebcam = () => {
+    stopFaceDetectLoop();
     if (videoRef.current && videoRef.current.srcObject) {
       const tracks = videoRef.current.srcObject.getTracks();
       tracks.forEach(track => track.stop());
       videoRef.current.srcObject = null;
     }
     setUseWebcam(false);
+
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d');
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
+
+    if (onMetricsUpdate) {
+      onMetricsUpdate(null, null, null);
+    }
   };
 
   // Clean up webcam on unmount
   React.useEffect(() => {
     return () => {
+      stopFaceDetectLoop();
       stopWebcam();
     };
   }, []);
@@ -97,13 +254,27 @@ export default function CameraAiOverlay({
         )}
       </div>
 
-      {/* Layer 2: HUD Computer Vision Overlays */}
+      {/* Layer 2: HUD Computer Vision Overlays & Canvas */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {/* Dynamic scan line effect */}
         <div className="scan-line" style={{ zIndex: 3 }} />
 
+        {/* Real-time landmark canvas overlay */}
+        <canvas 
+          ref={canvasRef} 
+          style={{ 
+            position: 'absolute', 
+            top: 0, 
+            left: 0, 
+            width: '100%', 
+            height: '100%',
+            display: useWebcam ? 'block' : 'none',
+            zIndex: 4
+          }} 
+        />
+
         {/* AI HUD Status indicator */}
-        <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: '6px', alignItems: 'center', zIndex: 4 }}>
+        <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: '6px', alignItems: 'center', zIndex: 5 }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: isDrowsy ? '#ef4444' : '#10b981', animation: 'pulse 1s infinite' }} />
           <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.7)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
             AI ENGINE ACTIVE
@@ -111,14 +282,14 @@ export default function CameraAiOverlay({
         </div>
 
         {/* HUD grid corners */}
-        <div style={{ position: 'absolute', top: 12, left: 12, width: 8, height: 8, borderTop: '2px solid rgba(255,255,255,0.4)', borderLeft: '2px solid rgba(255,255,255,0.4)' }} />
-        <div style={{ position: 'absolute', top: 12, right: 12, width: 8, height: 8, borderTop: '2px solid rgba(255,255,255,0.4)', borderRight: '2px solid rgba(255,255,255,0.4)' }} />
-        <div style={{ position: 'absolute', bottom: 12, left: 12, width: 8, height: 8, borderBottom: '2px solid rgba(255,255,255,0.4)', borderLeft: '2px solid rgba(255,255,255,0.4)' }} />
-        <div style={{ position: 'absolute', bottom: 12, right: 12, width: 8, height: 8, borderBottom: '2px solid rgba(255,255,255,0.4)', borderRight: '2px solid rgba(255,255,255,0.4)' }} />
+        <div style={{ position: 'absolute', top: 12, left: 12, width: 8, height: 8, borderTop: '2px solid rgba(255,255,255,0.4)', borderLeft: '2px solid rgba(255,255,255,0.4)', zIndex: 5 }} />
+        <div style={{ position: 'absolute', top: 12, right: 12, width: 8, height: 8, borderTop: '2px solid rgba(255,255,255,0.4)', borderRight: '2px solid rgba(255,255,255,0.4)', zIndex: 5 }} />
+        <div style={{ position: 'absolute', bottom: 12, left: 12, width: 8, height: 8, borderBottom: '2px solid rgba(255,255,255,0.4)', borderLeft: '2px solid rgba(255,255,255,0.4)', zIndex: 5 }} />
+        <div style={{ position: 'absolute', bottom: 12, right: 12, width: 8, height: 8, borderBottom: '2px solid rgba(255,255,255,0.4)', borderRight: '2px solid rgba(255,255,255,0.4)', zIndex: 5 }} />
 
         {/* Driver Drowsiness fatigue scanner box (Only visible in simulation mode, hidden when live webcam is active) */}
         {mode === 'driver' && !useWebcam && (
-          <div style={{ position: 'relative', width: '220px', height: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ position: 'relative', width: '220px', height: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
             <div style={{
               position: 'absolute',
               width: '180px',
@@ -189,7 +360,7 @@ export default function CameraAiOverlay({
 
         {/* Student attendance face match box */}
         {mode === 'attendance' && (
-          <div style={{ position: 'relative', width: '220px', height: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ position: 'relative', width: '220px', height: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
             <div style={{
               position: 'absolute',
               width: '170px',
