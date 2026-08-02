@@ -91,20 +91,7 @@ export default function Navbar({
             if (!anyVisible) return null;
             return (
               <div style={{ display: 'flex', gap: '6px', background: 'var(--bg-card)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-card)' }}>
-                {show.drowsiness && (
-                  <button
-                    style={{
-                      background: simulations.drowsiness ? 'rgba(239,68,68,0.3)' : 'transparent',
-                      border: simulations.drowsiness ? '1px solid #ef4444' : 'none',
-                      color: simulations.drowsiness ? '#ef4444' : 'var(--text-muted)',
-                      padding: '4px 8px', borderRadius: '6px', fontSize: '0.7rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
-                    }}
-                    onClick={() => toggleSimulation('drowsiness')}
-                    title="Mô phỏng cảnh báo tài xế ngủ gật"
-                  >
-                    <AlertTriangle size={12} /> Ngủ Gật
-                  </button>
-                )}
+
                 {show.leftBehind && (
                   <button
                     style={{

@@ -50,7 +50,6 @@ export default function DriverTabletView({ simulations }) {
   // Run periodic Drowsiness check via the DrowsinessEngine
   useEffect(() => {
     const interval = setInterval(() => {
-      // Determine simulated EAR, MAR, Pitch based on simulation state
       let earInput = 0.28;
       let marInput = 0.10;
       let pitchInput = 0;
@@ -60,35 +59,11 @@ export default function DriverTabletView({ simulations }) {
         earInput = realMetrics.ear;
         marInput = realMetrics.mar;
         pitchInput = realMetrics.pitch;
-      } else if (simulations.drowsiness) {
-        // Driver is simulated as drowsy: cycle between eyes closed, yawns and head nods
-        const timeFactor = Date.now() % 15000;
-        if (timeFactor < 5000) {
-          // Yawning phase
-          earInput = 0.25;
-          marInput = 0.65;
-          pitchInput = 5;
-        } else if (timeFactor < 10000) {
-          // Closed eyes (nhắm mắt)
-          earInput = 0.14;
-          marInput = 0.10;
-          pitchInput = 10;
-        } else {
-          // Head nodding (gật đầu)
-          earInput = 0.22;
-          marInput = 0.15;
-          pitchInput = 25;
-        }
       } else {
-        // Normal blinking
-        const blinkFactor = Date.now() % 4000;
-        if (blinkFactor < 200) {
-          earInput = 0.12; // normal blink
-        } else {
-          earInput = 0.28 + Math.random() * 0.02;
-        }
-        marInput = 0.10 + Math.random() * 0.04;
-        pitchInput = (Math.random() - 0.5) * 4;
+        // Webcam is off or no face detected. Keep completely static, do not jump.
+        earInput = 0.28;
+        marInput = 0.10;
+        pitchInput = 0;
       }
 
       const res = detectorRef.current.processFrame(earInput, marInput, pitchInput, contextLevel);
@@ -107,13 +82,13 @@ export default function DriverTabletView({ simulations }) {
       });
 
       // Play beep sound if Layer 1 reflex triggers
-      if (res.isL1Triggered && audioEnabled) {
+      if (res.isL1Triggered) {
         playBeepAlert();
       }
     }, 250);
 
     return () => clearInterval(interval);
-  }, [simulations.drowsiness, audioEnabled, contextLevel]);
+  }, [contextLevel]);
 
   const isDrowsy = drowsinessState.alertLevel >= 2;
 
