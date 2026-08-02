@@ -37,9 +37,8 @@ export default function CameraAiOverlay({
     setUseWebcam(false);
   };
 
-  // Auto start webcam on mount to show live camera feed immediately
+  // Clean up webcam on unmount
   React.useEffect(() => {
-    startWebcam();
     return () => {
       stopWebcam();
     };
@@ -77,15 +76,19 @@ export default function CameraAiOverlay({
 
       {/* Layer 1: Live Video or Synthetic Backdrop */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
-        {useWebcam ? (
-          <video 
-            ref={videoRef} 
-            autoPlay 
-            playsInline 
-            muted 
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-          />
-        ) : (
+        <video 
+          ref={videoRef} 
+          autoPlay 
+          playsInline 
+          muted 
+          style={{ 
+            width: '100%', 
+            height: '100%', 
+            objectFit: 'cover',
+            display: useWebcam ? 'block' : 'none'
+          }} 
+        />
+        {!useWebcam && (
           <div style={{
             width: '100%',
             height: '100%',

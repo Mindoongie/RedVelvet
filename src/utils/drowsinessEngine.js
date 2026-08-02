@@ -274,6 +274,40 @@ export class DrowsinessDetector {
     this.eyeClosedStartMs = null;
     this.layer1AlertHistory = []; // Timestamps các lần còi phản xạ Layer 1
     this.lastL1AlertTime = 0;
+
+    // Load state from localStorage on startup to prevent reset on tab unmount/remount
+    this.loadState();
+  }
+
+  saveState() {
+    try {
+      const state = {
+        yawnEvents: this.yawnDetector.events,
+        lastYawnEndMs: this.yawnDetector.lastYawnEndMs,
+        nodEvents: this.nodDetector.events,
+        layer1AlertHistory: this.layer1AlertHistory,
+        lastL1AlertTime: this.lastL1AlertTime,
+        eyeClosedStartMs: this.eyeClosedStartMs,
+        perclosHistory: this.perclosAcc.history
+      };
+      localStorage.setItem('safebus_drowsiness_state', JSON.stringify(state));
+    } catch (e) {}
+  }
+
+  loadState() {
+    try {
+      const data = localStorage.getItem('safebus_drowsiness_state');
+      if (data) {
+        const state = JSON.parse(data);
+        this.yawnDetector.events = state.yawnEvents || [];
+        this.yawnDetector.lastYawnEndMs = state.lastYawnEndMs || 0;
+        this.nodDetector.events = state.nodEvents || [];
+        this.layer1AlertHistory = state.layer1AlertHistory || [];
+        this.lastL1AlertTime = state.lastL1AlertTime || 0;
+        this.eyeClosedStartMs = state.eyeClosedStartMs || null;
+        this.perclosAcc.history = state.perclosHistory || [];
+      }
+    } catch (e) {}
   }
 
   processFrame(ear, mar, pitch, contextLevel = 'binh_thuong') {
@@ -340,6 +374,9 @@ export class DrowsinessDetector {
       alertLevel = 2;
     }
 
+    // Save state on every frame processed to survive unmount/remount
+    this.saveState();
+
     return {
       isClosed,
       isL1Triggered,
@@ -363,5 +400,8 @@ export class DrowsinessDetector {
     this.eyeClosedStartMs = null;
     this.layer1AlertHistory = [];
     this.lastL1AlertTime = 0;
+    try {
+      localStorage.removeItem('safebus_drowsiness_state');
+    } catch (e) {}
   }
 }
