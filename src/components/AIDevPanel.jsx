@@ -12,9 +12,9 @@ export default function AIDevPanel({ isOpen, onClose }) {
       width: '540px',
       maxWidth: '90vw',
       height: '100vh',
-      backgroundColor: '#0b132b',
+      backgroundColor: 'var(--bg-card)',
       borderLeft: '1px solid var(--accent-cyan)',
-      boxShadow: '-10px 0 30px rgba(0,0,0,0.7)',
+      boxShadow: '-10px 0 30px rgba(148, 163, 184, 0.15)',
       zIndex: 9999,
       overflowY: 'auto',
       padding: '24px',
@@ -27,7 +27,7 @@ export default function AIDevPanel({ isOpen, onClose }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Cpu color="var(--accent-cyan)" size={24} />
           <div>
-            <h2 style={{ fontSize: '1.1rem', color: '#fff', fontWeight: 700 }}>Hướng Dẫn Ghép AI (AI Integration Specs)</h2>
+            <h2 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: 700 }}>Hướng Dẫn Ghép AI (AI Integration Specs)</h2>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Dành cho các thành viên phụ trách lõi AI & Backend</p>
           </div>
         </div>
@@ -40,7 +40,7 @@ export default function AIDevPanel({ isOpen, onClose }) {
       </div>
 
       {/* Integration Overview Alert */}
-      <div style={{ background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.3)', borderRadius: '12px', padding: '12px', fontSize: '0.8rem', color: '#38bdf8' }}>
+      <div style={{ background: 'rgba(8, 145, 178, 0.05)', border: '1px solid rgba(8, 145, 178, 0.2)', borderRadius: '12px', padding: '12px', fontSize: '0.8rem', color: 'var(--accent-cyan)' }}>
         <p style={{ fontWeight: 600, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <CheckCircle size={14} /> Giao diện Frontend đã sẵn sàng các Slot & Webhook!
         </p>
@@ -54,7 +54,7 @@ export default function AIDevPanel({ isOpen, onClose }) {
       {/* 3.1 Face API */}
       <div className="glass-panel" style={{ padding: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between', marginBottom: '8px' }}>
-          <h3 style={{ fontSize: '0.9rem', color: '#34d399', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 style={{ fontSize: '0.9rem', color: 'var(--emerald-safe)', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Layers size={16} /> 3.1. Nhận diện khuôn mặt & Rà soát khoang xe
           </h3>
           <span className="badge-safe" style={{ fontSize: '0.65rem' }}>face-api.js</span>
@@ -62,7 +62,7 @@ export default function AIDevPanel({ isOpen, onClose }) {
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '10px' }}>
           Trích xuất vector 128 chiều (128-D descriptor), khoảng cách Euclid threshold 0.6. State Machine: <code>boarded</code>, <code>alighted</code>, <code>wrong_bus</code>.
         </p>
-        <div style={{ background: '#070b19', padding: '10px', borderRadius: '8px', fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: '#a7f3d0' }}>
+        <div style={{ background: 'var(--bg-dark)', padding: '10px', borderRadius: '8px', fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: 'var(--primary-teal)' }}>
           <div>// Target Hook in TeacherMonitorView.jsx & DriverTabletView.jsx</div>
           <div>const onFaceDetected = (studentId, descriptor128D, confidence) =&gt; &#123;</div>
           <div>&nbsp;&nbsp;if (distance(descriptor128D, targetVector) &lt; 0.6) &#123;</div>
@@ -75,7 +75,7 @@ export default function AIDevPanel({ isOpen, onClose }) {
       {/* 3.2 Driver Safety */}
       <div className="glass-panel" style={{ padding: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between', marginBottom: '8px' }}>
-          <h3 style={{ fontSize: '0.9rem', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 style={{ fontSize: '0.9rem', color: 'var(--accent-bus)', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <AlertOctagon size={16} /> 3.2. Cảnh báo tài xế ngủ gật & Biometrics
           </h3>
           <span className="badge-warning" style={{ fontSize: '0.65rem' }}>Inferensys / ai-driver-safety</span>
@@ -83,7 +83,7 @@ export default function AIDevPanel({ isOpen, onClose }) {
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '10px' }}>
           Tính toán tự động chỉ số: EAR (Eye Aspect Ratio), MAR (Mouth Aspect Ratio), Horizontal Head Offset & Mạng Bayes Noisy-OR Fusion.
         </p>
-        <div style={{ background: '#070b19', padding: '10px', borderRadius: '8px', fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: '#fde68a' }}>
+        <div style={{ background: 'var(--bg-dark)', padding: '10px', borderRadius: '8px', fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: 'var(--accent-bus)' }}>
           <div>// Target State in DriverTabletView.jsx</div>
           <div>const driverMetrics = &#123;</div>
           <div>&nbsp;&nbsp;ear: 0.18, // &lt; 0.20 triggers fatigue</div>
@@ -95,13 +95,13 @@ export default function AIDevPanel({ isOpen, onClose }) {
 
       {/* 3.4 & 3.5 GPS & SOS Routing Matrix */}
       <div className="glass-panel" style={{ padding: '16px' }}>
-        <h3 style={{ fontSize: '0.9rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+        <h3 style={{ fontSize: '0.9rem', color: 'var(--danger-red)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
           <Terminal size={16} /> 3.4 & 3.5. Haversine GPS & SOS Routing Matrix
         </h3>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '10px' }}>
           Thuật toán Haversine đo độ cong Trái Đất, vector vuông góc lộ trình. EmergencyDispatcher đẩy tin nhắn vào RabbitMQ queue & WebSocket real-time.
         </p>
-        <div style={{ background: '#070b19', padding: '10px', borderRadius: '8px', fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: '#fca5a5' }}>
+        <div style={{ background: 'var(--bg-dark)', padding: '10px', borderRadius: '8px', fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: 'var(--danger-red)' }}>
           <div>// Emergency Dispatcher Payload</div>
           <div>const sosPayload = &#123;</div>
           <div>&nbsp;&nbsp;category: "traffic_accident" | "fire" | "medical" | "intruder",</div>

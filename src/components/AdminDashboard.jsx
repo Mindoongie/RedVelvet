@@ -44,8 +44,8 @@ export default function AdminDashboard({ simulations }) {
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Tổng Xe Hoạt Động</span>
             <Bus size={20} color="var(--accent-cyan)" />
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--font-mono)' }}>
-            12 / 12 <span style={{ fontSize: '0.8rem', color: '#34d399', fontWeight: 600 }}>(100%)</span>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
+            12 / 12 <span style={{ fontSize: '0.8rem', color: 'var(--emerald-safe)', fontWeight: 600 }}>(100%)</span>
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
             Đang chạy lộ trình sáng
@@ -56,12 +56,12 @@ export default function AdminDashboard({ simulations }) {
         <div className="glass-panel" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Học Sinh Trên Xe</span>
-            <Users size={20} color="#34d399" />
+            <Users size={20} color="var(--emerald-safe)" />
           </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
             284 / 284
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#34d399', marginTop: '4px' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--emerald-safe)', marginTop: '4px' }}>
             ✓ Quét khuôn mặt 100% an toàn
           </div>
         </div>
@@ -88,7 +88,7 @@ export default function AdminDashboard({ simulations }) {
         {/* Map Simulator Panel */}
         <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff' }}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>
               Bản Đồ Giám Sát Tuyến Xe Bus Real-Time (GPS & Haversine Deviation)
             </h2>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -102,14 +102,14 @@ export default function AdminDashboard({ simulations }) {
 
         {/* Telemetry & AI Stream Feed */}
         <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <ShieldCheck size={18} color="var(--accent-cyan)" /> Nhật Ký Cảnh Báo AI System
           </h2>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', maxHeight: '340px' }}>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px', borderLeft: '3px solid #34d399', fontSize: '0.75rem' }}>
+            <div style={{ background: 'var(--bg-card-hover)', padding: '10px', borderRadius: '8px', borderLeft: '3px solid var(--emerald-safe)', fontSize: '0.75rem', borderTop: '1px solid var(--border-card)', borderRight: '1px solid var(--border-card)', borderBottom: '1px solid var(--border-card)' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>07:42:15 - face-api.js Edge</div>
-              <div style={{ fontWeight: 600, color: '#fff' }}>Quét thành công 24/24 học sinh Xe Bus 01</div>
+              <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>Quét thành công 24/24 học sinh Xe Bus 01</div>
             </div>
 
             {simulations.drowsiness && (
@@ -126,9 +126,9 @@ export default function AdminDashboard({ simulations }) {
               </div>
             )}
 
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px', borderLeft: '3px solid #f59e0b', fontSize: '0.75rem' }}>
+            <div style={{ background: 'var(--bg-card-hover)', padding: '10px', borderRadius: '8px', borderLeft: '3px solid var(--accent-bus)', fontSize: '0.75rem', borderTop: '1px solid var(--border-card)', borderRight: '1px solid var(--border-card)', borderBottom: '1px solid var(--border-card)' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>07:35:18 - EmergencyDispatcher</div>
-              <div style={{ fontWeight: 600, color: '#fff' }}>Kiểm tra định kỳ kết nối RabbitMQ & WebSockets - OK</div>
+              <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>Kiểm tra định kỳ kết nối RabbitMQ & WebSockets - OK</div>
             </div>
           </div>
         </div>
@@ -138,7 +138,7 @@ export default function AdminDashboard({ simulations }) {
       {/* Fleet Management Table */}
       <div className="glass-panel" style={{ padding: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff' }}>Danh Sách Đội Xe & Trạng Thái Sinh Trắc Học Cabin</h2>
+          <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>Danh Sách Đội Xe & Trạng Thái Sinh Trắc Học Cabin</h2>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.75rem' }}>
               <FileText size={14} /> Xuất Báo Cáo An Toàn
@@ -161,13 +161,13 @@ export default function AdminDashboard({ simulations }) {
             </thead>
             <tbody>
               {fleetData.map((bus) => (
-                <tr key={bus.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <tr key={bus.id} style={{ borderBottom: '1px solid var(--border-card)' }}>
                   <td style={{ padding: '12px', fontWeight: 700, color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)' }}>{bus.id}</td>
-                  <td style={{ padding: '12px', color: '#fff' }}>{bus.route}</td>
+                  <td style={{ padding: '12px', color: 'var(--text-main)' }}>{bus.route}</td>
                   <td style={{ padding: '12px', color: 'var(--text-main)' }}>{bus.driver}</td>
                   <td style={{ padding: '12px', color: 'var(--text-main)' }}>{bus.teacher}</td>
-                  <td style={{ padding: '12px', fontWeight: 600, color: '#34d399', fontFamily: 'var(--font-mono)' }}>{bus.students}</td>
-                  <td style={{ padding: '12px', fontFamily: 'var(--font-mono)', color: bus.status === 'warning' ? '#f87171' : 'var(--text-main)' }}>
+                  <td style={{ padding: '12px', fontWeight: 600, color: 'var(--emerald-safe)', fontFamily: 'var(--font-mono)' }}>{bus.students}</td>
+                  <td style={{ padding: '12px', fontFamily: 'var(--font-mono)', color: bus.status === 'warning' ? 'var(--danger-red)' : 'var(--text-main)' }}>
                     {bus.status === 'warning' ? '0.16 (CẢNH BÁO)' : bus.ear}
                   </td>
                   <td style={{ padding: '12px' }}>

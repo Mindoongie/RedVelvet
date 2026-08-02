@@ -37,7 +37,7 @@ export default function SosModal({ isOpen, onClose }) {
     <div style={{
       position: 'fixed',
       inset: 0,
-      background: 'rgba(5, 10, 23, 0.85)',
+      background: 'rgba(15, 23, 42, 0.65)',
       backdropFilter: 'blur(10px)',
       zIndex: 10000,
       display: 'flex',
@@ -45,7 +45,7 @@ export default function SosModal({ isOpen, onClose }) {
       justifyContent: 'center',
       padding: '20px'
     }}>
-      <div className="glass-panel" style={{ width: '560px', maxWidth: '100%', padding: '28px', border: '2px solid #ef4444', boxShadow: '0 0 40px rgba(239, 68, 68, 0.5)' }}>
+      <div className="glass-panel" style={{ width: '560px', maxWidth: '100%', padding: '28px', border: '2px solid #ef4444', boxShadow: '0 8px 32px 0 rgba(239, 68, 68, 0.2)' }}>
         
         {/* Modal Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -78,14 +78,14 @@ export default function SosModal({ isOpen, onClose }) {
                     key={inc.id}
                     onClick={() => setSelectedIncident(inc.id)}
                     style={{
-                      background: selected ? `rgba(${inc.color === '#ef4444' ? '239,68,68' : '6,182,212'}, 0.2)` : 'rgba(255,255,255,0.04)',
+                      background: selected ? `rgba(${inc.color === '#ef4444' ? '239,68,68' : '6,182,212'}, 0.1)` : 'var(--bg-card)',
                       border: selected ? `2px solid ${inc.color}` : '1px solid var(--border-card)',
                       borderRadius: '12px',
                       padding: '14px',
                       textAlign: 'left',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
-                      color: '#fff'
+                      color: 'var(--text-main)'
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
@@ -111,22 +111,22 @@ export default function SosModal({ isOpen, onClose }) {
           </div>
         ) : (
           <div>
-            <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', padding: '16px', borderRadius: '12px', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <CheckCircle2 size={28} color="#34d399" />
+            <div style={{ background: 'rgba(5, 150, 105, 0.08)', border: '1px solid var(--emerald-safe)', padding: '16px', borderRadius: '12px', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <CheckCircle2 size={28} color="var(--emerald-safe)" />
               <div>
-                <h3 style={{ fontSize: '1rem', color: '#34d399', fontWeight: 700 }}>ĐÃ PHÁT TÍN HIỆU SOS THÀNH CÔNG!</h3>
+                <h3 style={{ fontSize: '1rem', color: 'var(--emerald-safe)', fontWeight: 700 }}>ĐÃ PHÁT TÍN HIỆU SOS THÀNH CÔNG!</h3>
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Ban Giám Hiệu, Lực lượng cứu hộ và Phụ huynh đã nhận được vị trí GPS xe.</p>
               </div>
             </div>
 
             {/* RabbitMQ Dispatcher Log Visualizer */}
-            <div style={{ background: '#050914', border: '1px solid var(--border-card)', padding: '14px', borderRadius: '10px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#38bdf8', marginBottom: '20px' }}>
-              <div style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '6px', marginBottom: '8px', color: 'var(--text-muted)' }}>
+            <div style={{ background: 'var(--bg-dark)', border: '1px solid var(--border-card)', padding: '14px', borderRadius: '10px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--accent-cyan)', marginBottom: '20px' }}>
+              <div style={{ borderBottom: '1px solid var(--border-card)', paddingBottom: '6px', marginBottom: '8px', color: 'var(--text-muted)' }}>
                 [EmergencyDispatcher Routing Matrix Log]
               </div>
               {dispatchLogs.map((log, idx) => (
                 <div key={idx} style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ color: '#34d399' }}>✓</span> {log}
+                  <span style={{ color: 'var(--emerald-safe)' }}>✓</span> {log}
                 </div>
               ))}
             </div>

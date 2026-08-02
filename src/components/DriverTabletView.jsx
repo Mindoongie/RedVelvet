@@ -1,22 +1,62 @@
-import React from 'react';
-import { Eye, Volume2, VolumeX, ScanLine, ShieldCheck, AlertTriangle, CheckCircle2, Users } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Eye, Volume2, VolumeX, ScanLine, ShieldCheck, AlertTriangle, 
+  CheckCircle2, Users, ArrowUpDown, Play, Square, UserCheck, 
+  HelpCircle, RefreshCw, LogIn, LogOut, Camera
+} from 'lucide-react';
 import CameraAiOverlay from './CameraAiOverlay';
+import { 
+  getStudentsForBus, 
+  getRoster, 
+  startTrip, 
+  registerScan, 
+  rosterSummary, 
+  findBestMatch,
+  loadFaceModels
+} from '../utils/faceEngine';
 
-// ─── Hằng số chu kỳ AI tự động ───────────────────────────────────────────────
-const AI_CYCLE_DELAY_MS  = 8000;  // sau 8s bắt đầu cảnh báo ngủ gật
-const AI_ALERT_DURATION  = 6000;  // cảnh báo kéo dài 6s rồi tắt
-const AI_CYCLE_PERIOD_MS = 22000; // lặp lại mỗi 22s
+// ─── Hằng số chu kỳ AI tự động ngủ gật của tài xế ────────────────────────────
+const AI_CYCLE_DELAY_MS  = 8000;
+const AI_ALERT_DURATION  = 6000;
+const AI_CYCLE_PERIOD_MS = 22000;
 
 export default function DriverTabletView({ simulations }) {
-  const [audioEnabled, setAudioEnabled] = React.useState(true);
-
-  // ─── Trạng thái AI tự động phát hiện ngủ gật ──────────────────────────────
-  // Kết hợp: AI nội bộ (auto-cycle) + admin demo toggle
-  const [aiDrowsy, setAiDrowsy] = React.useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [aiDrowsy, setAiDrowsy] = useState(false);
   const isDrowsy = aiDrowsy || simulations.drowsiness;
 
-  React.useEffect(() => {
-    // Chu kỳ: chờ → bật cảnh báo → tắt → lặp
+  // ─── Trạng thái Chuyến xe & Điểm danh ──────────────────────────────────────
+  const [isTripActive, setIsTripActive] = useState(false);
+  const [scanMode, setScanMode] = useState('boarded'); // 'boarded' (lên xe) | 'alighted' (xuống xe)
+  const [tripRosterState, setTripRosterState] = useState(null);
+  
+  // Camera & AI Scanning states
+  const [cameraActive, setCameraActive] = useState(false);
+  const [modelStatus, setModelStatus] = useState('Chưa tải'); // 'Chưa tải' | 'loading' | 'ready' | 'error'
+  const [modelMsg, setModelMsg] = useState('AI Điểm Danh chưa khởi động.');
+  const [lastScanResult, setLastScanResult] = useState(null);
+  const [sweepState, setSweepState] = useState('idle'); // idle | scanning | clear | found
+
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+  const drawLoopRef = useRef(null);
+  
+  const lastScannedIdRef = useRef(null);
+  const lastScannedTimeRef = useRef(null);
+  const lastUnknownTimeRef = useRef(null);
+
+  // Load current trip status on mount
+  useEffect(() => {
+    const current = getRoster('BUS-01');
+    if (current) {
+      setIsTripActive(true);
+      setTripRosterState(rosterSummary(current));
+    }
+  }, []);
+
+  // ─── Chu kỳ tự động cảnh báo ngủ gật tài xế ────────────────────────────────
+  useEffect(() => {
     const runCycle = () => {
       const onTimer  = setTimeout(() => setAiDrowsy(true),  AI_CYCLE_DELAY_MS);
       const offTimer = setTimeout(() => setAiDrowsy(false), AI_CYCLE_DELAY_MS + AI_ALERT_DURATION);
@@ -32,53 +72,303 @@ export default function DriverTabletView({ simulations }) {
     };
   }, []);
 
-  // ─── Âm thanh cảnh báo khi phát hiện ngủ gật ─────────────────────────────
-  React.useEffect(() => {
+  // Âm thanh báo hiệu buồn ngủ
+  useEffect(() => {
     if (isDrowsy && audioEnabled) {
-      try {
-        const ctx  = new (window.AudioContext || window.webkitAudioContext)();
-        const osc  = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 1.2);
-      } catch (e) { /* ignore */ }
+      playBeepAlert();
     }
   }, [isDrowsy]);
 
-  // ─── Trạng thái rà soát khoang xe ────────────────────────────────────────
-  const [sweepState, setSweepState] = React.useState('idle'); // idle | scanning | clear | found
-  const studentsOnBus = simulations.leftBehind ? 1 : 0;
-
-  const handleSweep = () => {
-    setSweepState('scanning');
-    setTimeout(() => {
-      setSweepState(studentsOnBus > 0 ? 'found' : 'clear');
-    }, 2500); // giả lập AI quét mất 2.5s
+  const playBeepAlert = () => {
+    try {
+      const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 1.2);
+    } catch (e) {}
   };
 
-  // ─── Chỉ số sinh trắc học ────────────────────────────────────────────────
+  const playBeepSuccess = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(523, ctx.currentTime);
+      osc.frequency.setValueAtTime(659, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(); osc.stop(ctx.currentTime + 0.4);
+    } catch (e) {}
+  };
+
+  const playBeepError = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(); osc.stop(ctx.currentTime + 0.4);
+    } catch (e) {}
+  };
+
+  // ─── Quản lý Chuyến Đi ────────────────────────────────────────────────────
+  const handleStartTrip = () => {
+    const students = getStudentsForBus('BUS-01');
+    if (students.length === 0) {
+      alert('Tuyến BUS-01 hiện chưa có học sinh nào đăng ký. Vui lòng đăng ký học sinh từ tài khoản Phụ Huynh.');
+      return;
+    }
+    const r = startTrip('BUS-01', students);
+    setIsTripActive(true);
+    setTripRosterState(rosterSummary(r));
+    setSweepState('idle');
+    setLastScanResult(null);
+  };
+
+  const handleEndTrip = () => {
+    if (!tripRosterState) return;
+    setSweepState('scanning');
+    
+    setTimeout(() => {
+      // Check if any student is still on bus
+      const leftBehind = tripRosterState.entries.filter(e => e.status === 'on_bus');
+      if (leftBehind.length > 0) {
+        setSweepState('found');
+        playBeepAlert();
+      } else {
+        setSweepState('clear');
+        setIsTripActive(false);
+        localStorage.removeItem('safebus_trip_BUS-01');
+      }
+    }, 2000);
+  };
+
+  // ─── Điểm Danh Thủ Công ───────────────────────────────────────────────────
+  const handleManualCheck = (studentId, event) => {
+    if (!isTripActive) return;
+    const res = registerScan('BUS-01', studentId, event);
+    if (res.success) {
+      playBeepSuccess();
+      setTripRosterState(res.roster);
+      setLastScanResult({
+        student_id: studentId,
+        full_name: res.roster.entries.find(e => e.student_id === studentId).full_name,
+        confidence: 100,
+        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        success: true,
+        isManual: true
+      });
+    }
+  };
+
+  // ─── Điểm Danh Bằng Camera AI ─────────────────────────────────────────────
+  const initAiModels = async () => {
+    try {
+      setModelStatus('loading');
+      setModelMsg('Đang tải mô hình nhận diện khuôn mặt...');
+      await loadFaceModels((msg) => setModelMsg(msg));
+      setModelStatus('ready');
+      setModelMsg('Mô hình AI sẵn sàng. Bật camera điểm danh.');
+    } catch (err) {
+      setModelStatus('error');
+      setModelMsg('Lỗi tải mô hình AI: ' + err.message);
+    }
+  };
+
+  const startWebcam = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 320, height: 240, facingMode: 'user' }
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+        setCameraActive(true);
+        startFaceScanLoop();
+      }
+    } catch (err) {
+      alert('Không thể truy cập camera: ' + err.message);
+    }
+  };
+
+  const stopWebcam = () => {
+    if (drawLoopRef.current) {
+      cancelAnimationFrame(drawLoopRef.current);
+      drawLoopRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraActive(false);
+    
+    // Clear canvas
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d');
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
+  };
+
+  const startFaceScanLoop = () => {
+    const detectAndScan = async () => {
+      if (videoRef.current && videoRef.current.readyState >= 2 && canvasRef.current) {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        const faceapi = window.faceapi;
+
+        if (faceapi && isTripActive) {
+          const result = await faceapi.detectSingleFace(
+            video,
+            new faceapi.TinyFaceDetectorOptions({ inputSize: 224 })
+          ).withFaceLandmarks().withFaceDescriptor();
+
+          const ctx = canvas.getContext('2d');
+          const dims = faceapi.matchDimensions(canvas, video, true);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          if (result) {
+            // Draw box
+            const resized = faceapi.resizeResults(result, dims);
+            faceapi.draw.drawDetections(canvas, resized);
+
+            // Compare descriptors
+            const match = findBestMatch(Array.from(result.descriptor));
+            
+            if (match.is_match) {
+              const sid = match.student_id;
+              
+              // Cooldown: prevent scanning the same student within 5 seconds
+              const now = Date.now();
+              if (lastScannedIdRef.current === sid && now - lastScannedTimeRef.current < 5000) {
+                // Do nothing
+              } else {
+                const scanRes = registerScan('BUS-01', sid, scanMode === 'boarded' ? 'boarded' : 'alighted');
+                
+                if (scanRes.success) {
+                  playBeepSuccess();
+                  setLastScanResult({
+                    student_id: sid,
+                    full_name: match.full_name,
+                    confidence: Math.round((1 - match.distance) * 100),
+                    time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                    success: true
+                  });
+                  setTripRosterState(scanRes.roster);
+                  
+                  lastScannedIdRef.current = sid;
+                  lastScannedTimeRef.current = now;
+                }
+              }
+            } else {
+              // Unknown face warning (cooldown 3s)
+              const now = Date.now();
+              if (!lastUnknownTimeRef.current || now - lastUnknownTimeRef.current > 3000) {
+                playBeepError();
+                setLastScanResult({
+                  student_id: 'UNKNOWN',
+                  full_name: 'Người Lạ / Chưa Đăng Ký',
+                  confidence: 0,
+                  time: new Date().toLocaleTimeString('vi-VN'),
+                  success: false
+                });
+                lastUnknownTimeRef.current = now;
+              }
+            }
+          }
+        }
+      }
+      drawLoopRef.current = requestAnimationFrame(detectAndScan);
+    };
+    drawLoopRef.current = requestAnimationFrame(detectAndScan);
+  };
+
+  // Mock AI scan for testing without camera
+  const triggerMockScan = () => {
+    if (!isTripActive || !tripRosterState) {
+      alert('Vui lòng Bắt đầu chuyến xe trước!');
+      return;
+    }
+    const entries = tripRosterState.entries;
+    
+    // Find expected students to check in
+    const targetStatus = scanMode === 'boarded' ? 'not_boarded' : 'on_bus';
+    const candidates = entries.filter(e => e.status === targetStatus);
+
+    if (candidates.length === 0) {
+      alert(`Tất cả học sinh đã ${scanMode === 'boarded' ? 'lên xe' : 'xuống xe'}!`);
+      return;
+    }
+
+    // Pick random candidate
+    const student = candidates[Math.floor(Math.random() * candidates.length)];
+    const scanRes = registerScan('BUS-01', student.student_id, scanMode === 'boarded' ? 'boarded' : 'alighted');
+    
+    if (scanRes.success) {
+      playBeepSuccess();
+      setLastScanResult({
+        student_id: student.student_id,
+        full_name: student.full_name,
+        confidence: Math.round(92 + Math.random() * 7),
+        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        success: true,
+        isMock: true
+      });
+      setTripRosterState(scanRes.roster);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (drawLoopRef.current) cancelAnimationFrame(drawLoopRef.current);
+      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+    };
+  }, []);
+
+  // Biometrics
   const earValue   = isDrowsy ? 0.16 : 0.28;
   const marValue   = isDrowsy ? 0.65 : 0.12;
   const riskScore  = isDrowsy ? 88   : 12;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px' }}>
-
-      {/* ── Banner tài xế ───────────────────────────────────────────────────── */}
-      <div className="glass-panel" style={{ padding: '14px 20px', border: '1px solid var(--accent-bus)', background: 'rgba(245,158,11,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      
+      {/* ── Driver Banner ─────────────────────────────────────────────────── */}
+      <div className="glass-panel" style={{ 
+        padding: '14px 20px', 
+        border: '1px solid var(--accent-bus)', 
+        background: 'rgba(217,119,6,0.08)', 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center' 
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{ background: '#f59e0b', padding: '8px 14px', borderRadius: '8px', color: '#000', fontWeight: 800, fontSize: '0.9rem' }}>
+          <div style={{ 
+            background: 'var(--accent-bus)', 
+            padding: '8px 14px', 
+            borderRadius: '8px', 
+            color: '#fff', 
+            fontWeight: 800, 
+            fontSize: '0.9rem' 
+          }}>
             TABLET LÁI XE
           </div>
           <div>
-            <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff' }}>XE BUS 01 – TÀI XẾ: NGUYỄN VĂN HÙNG</h2>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
+              XE BUS-01 – TÀI XẾ: NGUYỄN VĂN HÙNG
+            </h2>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              AI giám sát liên tục · Cảnh báo tự động khi phát hiện bất thường
+              Giám sát an toàn thông minh · Điểm danh khuôn mặt học sinh
             </p>
           </div>
         </div>
@@ -89,16 +379,16 @@ export default function DriverTabletView({ simulations }) {
           onClick={() => setAudioEnabled(!audioEnabled)}
         >
           {audioEnabled
-            ? <Volume2  size={16} color="#34d399" />
-            : <VolumeX  size={16} color="#f87171" />}
+            ? <Volume2 size={16} color="var(--emerald-safe)" />
+            : <VolumeX size={16} color="var(--danger-red)" />}
           <span>{audioEnabled ? 'Chuông: BẬT' : 'Chuông: TẮT'}</span>
         </button>
       </div>
 
-      {/* ── Banner cảnh báo ngủ gật (AI tự động hiện) ──────────────────────── */}
+      {/* ── Driver Drowsy Alarm Banner ─────────────────────────────────── */}
       {isDrowsy && (
         <div style={{
-          background: 'rgba(239,68,68,0.95)', color: '#fff',
+          background: 'var(--danger-red)', color: '#fff',
           padding: '16px 24px', borderRadius: '14px', textAlign: 'center',
           animation: 'pulse-danger 1s infinite',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px'
@@ -107,121 +397,413 @@ export default function DriverTabletView({ simulations }) {
           <div>
             <div style={{ fontSize: '1.4rem', fontWeight: 900 }}>AI PHÁT HIỆN DẤU HIỆU BUỒN NGỦ!</div>
             <div style={{ fontSize: '0.9rem', marginTop: '4px', opacity: 0.9 }}>
-              EAR = {earValue} (dưới ngưỡng 0.20) · Vui lòng dừng xe an toàn hoặc nhờ Giáo Viên hỗ trợ
+              EAR = {earValue} (Ngưỡng cảnh báo &lt; 0.20) · Vui lòng tập trung lái xe an toàn!
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Nội dung chính ──────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: '20px' }}>
+      {/* ── MAIN COCKPIT VIEW AREA ─────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr 1.2fr', gap: '16px' }}>
 
-        {/* Cột trái: Camera AI HUD ───────────────────────────────────────── */}
-        <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* 1. LEFT COLUMN: Driver Fatigue Safety (Inferensys AI) */}
+        <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Eye size={18} color="var(--accent-cyan)" /> Giám Sát Mắt & Khuôn Mặt (Inferensys AI)
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Eye size={16} color="var(--accent-cyan)" /> Giám Sát Tài Xế
             </h3>
-            <span className={isDrowsy ? 'badge-danger' : 'badge-safe'}>
-              {isDrowsy ? 'CẢNH BÁO MỆT MỎI' : 'AI: TỈNH TÁO'}
+            <span className={isDrowsy ? 'badge-danger' : 'badge-safe'} style={{ fontSize: '0.65rem' }}>
+              {isDrowsy ? 'CẢNH BÁO MỆT MỎI' : 'TỈNH TÁO'}
             </span>
           </div>
 
-          <div style={{ height: '260px' }}>
+          <div style={{ height: '210px' }}>
             <CameraAiOverlay mode="driver" isDrowsy={isDrowsy} />
           </div>
 
-          {/* Bộ 3 chỉ số */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+          {/* Indices */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {[
-              { label: 'EAR (Mở mắt)',      value: earValue,  bad: earValue < 0.20, note: '≥ 0.20' },
-              { label: 'MAR (Ngáp)',         value: marValue,  bad: marValue > 0.50, note: '< 0.50' },
-              { label: 'Risk Score (Bayes)', value: `${riskScore}%`, bad: riskScore > 50, note: 'Noisy-OR' },
+              { label: 'EAR (Chỉ số mở mắt)', value: earValue, bad: earValue < 0.20, note: 'Chuẩn ≥ 0.20' },
+              { label: 'MAR (Chỉ số ngáp)', value: marValue, bad: marValue > 0.50, note: 'Chuẩn < 0.50' },
+              { label: 'Risk Score (Độ rủi ro)', value: `${riskScore}%`, bad: riskScore > 50, note: 'Noisy-OR Fusion' },
             ].map(m => (
-              <div key={m.label} style={{ background: 'rgba(0,0,0,0.3)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-card)' }}>
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{m.label}</div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 800, fontFamily: 'var(--font-mono)', color: m.bad ? '#ef4444' : '#34d399' }}>
+              <div key={m.label} style={{ 
+                background: 'var(--bg-card-hover)', 
+                padding: '10px 12px', 
+                borderRadius: '8px', 
+                border: '1px solid var(--border-card)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                fontSize: '0.72rem'
+              }}>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{m.label}</div>
+                  <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>{m.note}</div>
+                </div>
+                <div style={{ 
+                  fontSize: '1.05rem', 
+                  fontWeight: 800, 
+                  fontFamily: 'var(--font-mono)', 
+                  color: m.bad ? 'var(--danger-red)' : 'var(--emerald-safe)' 
+                }}>
                   {m.value}
                 </div>
-                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Ngưỡng: {m.note}</div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Cột phải: Quét Khoang Xe ──────────────────────────────────────── */}
-        <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ScanLine size={18} color="#f59e0b" /> Rà Soát Khoang Xe Cuối Chuyến
-          </h3>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-            Bấm nút bên dưới sau khi đến điểm cuối. AI sẽ quét toàn bộ khoang xe bằng nhận diện khuôn mặt để đảm bảo không còn học sinh nào bị bỏ quên.
-          </p>
-
-          {/* Nút Quét Khoang Xe lớn, nổi bật */}
-          {sweepState === 'idle' && (
+        {/* 2. MIDDLE COLUMN: Student Face Scan Camera (1 Camera) */}
+        <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Camera size={16} color="var(--primary-teal)" /> AI Attendance Stream
+            </h3>
+            
             <button
-              onClick={handleSweep}
-              style={{
-                background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                color: '#000', border: 'none',
-                borderRadius: '16px', padding: '28px',
-                fontSize: '1.1rem', fontWeight: 900,
-                cursor: 'pointer', width: '100%',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
-                boxShadow: '0 8px 24px rgba(245,158,11,0.4)',
-                transition: 'transform 0.15s ease',
+              onClick={() => setScanMode(prev => prev === 'boarded' ? 'alighted' : 'boarded')}
+              className="badge-ai"
+              style={{ 
+                fontSize: '0.65rem', 
+                cursor: 'pointer', 
+                background: 'rgba(8,145,178,0.1)', 
+                border: '1px solid rgba(8,145,178,0.3)',
+                padding: '4px 8px'
               }}
-              onMouseOver={e => e.currentTarget.style.transform = 'scale(1.02)'}
-              onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
             >
-              <ScanLine size={40} />
-              QUÉT KHOANG XE
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.8 }}>
-                Nhận diện khuôn mặt AI – End-trip Sweep
-              </span>
+              <ArrowUpDown size={10} /> Mode: {scanMode === 'boarded' ? 'LÊN XE' : 'XUỐNG XE'}
             </button>
-          )}
+          </div>
 
-          {/* Đang quét */}
-          {sweepState === 'scanning' && (
-            <div style={{ textAlign: 'center', padding: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '48px', height: '48px', border: '4px solid rgba(6,182,212,0.3)', borderTopColor: 'var(--accent-cyan)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-              <div style={{ color: '#38bdf8', fontWeight: 700 }}>AI đang quét khoang xe…</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Phân tích camera toàn khoang xe</div>
-            </div>
-          )}
+          {/* Attendance Camera Box */}
+          <div style={{ 
+            position: 'relative', 
+            height: '210px', 
+            background: '#000', 
+            borderRadius: '12px', 
+            overflow: 'hidden',
+            border: '1px solid var(--border-card)'
+          }}>
+            {cameraActive ? (
+              <>
+                <video 
+                  ref={videoRef} 
+                  autoPlay 
+                  playsInline 
+                  muted 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                />
+                <canvas 
+                  ref={canvasRef} 
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} 
+                />
+                {/* Mode Tag */}
+                <div style={{ 
+                  position: 'absolute', top: 8, left: 8, 
+                  background: scanMode === 'boarded' ? 'rgba(5,150,105,0.9)' : 'rgba(217,119,6,0.9)',
+                  color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700 
+                }}>
+                  ĐANG ĐIỂM DANH: {scanMode === 'boarded' ? 'LÊN XE' : 'XUỐNG XE'}
+                </div>
+              </>
+            ) : (
+              <div style={{ 
+                width: '100%', height: '100%', 
+                display: 'flex', flexDirection: 'column', 
+                alignItems: 'center', justifyContent: 'center', 
+                color: 'var(--text-muted)', gap: '8px',
+                textAlign: 'center', padding: '16px'
+              }}>
+                <Camera size={26} />
+                <div style={{ fontSize: '0.72rem' }}>{modelMsg}</div>
+                {modelStatus !== 'ready' ? (
+                  <button 
+                    onClick={initAiModels}
+                    disabled={modelStatus === 'loading'}
+                    className="btn-primary"
+                    style={{ fontSize: '0.72rem', padding: '6px 12px' }}
+                  >
+                    {modelStatus === 'loading' ? <RefreshCw size={12} className="spin" /> : 'Kích Hoạt AI'}
+                  </button>
+                ) : (
+                  <button 
+                    onClick={startWebcam}
+                    disabled={!isTripActive}
+                    className="btn-secondary"
+                    style={{ fontSize: '0.72rem', padding: '6px 12px', opacity: isTripActive ? 1 : 0.6 }}
+                  >
+                    Mở Camera Điểm Danh
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
-          {/* Kết quả: An toàn */}
-          {sweepState === 'clear' && (
-            <div style={{ background: 'rgba(16,185,129,0.15)', border: '2px solid #10b981', borderRadius: '14px', padding: '24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-              <CheckCircle2 size={48} color="#34d399" />
-              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#34d399' }}>KHOANG XE TRỐNG – AN TOÀN!</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Không phát hiện học sinh nào còn trên xe.</div>
-              <button className="btn-secondary" style={{ marginTop: '8px' }} onClick={() => setSweepState('idle')}>
-                Quét Lại
+          {/* Action buttons */}
+          {isTripActive && (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {cameraActive && (
+                <button 
+                  onClick={stopWebcam}
+                  className="btn-secondary"
+                  style={{ flex: 1, fontSize: '0.72rem', padding: '6px', justifyContent: 'center' }}
+                >
+                  Tắt Cam
+                </button>
+              )}
+              <button 
+                onClick={triggerMockScan}
+                className="btn-primary"
+                style={{ flex: 2, fontSize: '0.72rem', padding: '6px', justifyContent: 'center', background: 'linear-gradient(135deg, var(--primary-teal), var(--accent-cyan))' }}
+              >
+                <RefreshCw size={12} />
+                <span>Giả Lập Quét AI Mặt</span>
               </button>
             </div>
           )}
 
-          {/* Kết quả: Phát hiện học sinh */}
-          {sweepState === 'found' && (
-            <div style={{ background: 'rgba(239,68,68,0.2)', border: '2px solid #ef4444', borderRadius: '14px', padding: '24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', animation: 'pulse-danger 1.5s infinite' }}>
-              <Users size={48} color="#f87171" />
-              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f87171' }}>⚠ CÒN HỌC SINH TRÊN XE!</div>
-              <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600 }}>Phạm Phương Chi – Lớp 2C</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Vui lòng kiểm tra ghế cuối trước khi tắt máy xe.</div>
-              <button className="btn-secondary" style={{ marginTop: '8px', borderColor: '#ef4444', color: '#f87171' }} onClick={() => setSweepState('idle')}>
-                Xác Nhận & Quét Lại
+          {/* Last Scanned Result HUD */}
+          <div style={{ 
+            background: 'var(--bg-card-hover)', 
+            border: '1px solid var(--border-card)', 
+            borderRadius: '10px', padding: '12px', 
+            flexGrow: 1, display: 'flex', flexDirection: 'column', 
+            justifyContent: 'center', minHeight: '90px' 
+          }}>
+            {lastScanResult ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ 
+                  width: '42px', height: '42px', borderRadius: '50%',
+                  background: lastScanResult.success ? 'var(--emerald-safe)' : 'var(--danger-red)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#fff', fontSize: '1rem', fontWeight: 800
+                }}>
+                  {lastScanResult.student_id === 'UNKNOWN' ? '?' : lastScanResult.full_name[0]}
+                </div>
+                <div style={{ flexGrow: 1, fontSize: '0.72rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 800, color: lastScanResult.success ? 'var(--emerald-safe)' : 'var(--danger-red)' }}>
+                      {lastScanResult.success ? 'AI NHẬN DIỆN THÀNH CÔNG' : 'AI PHÁT HIỆN NGƯỜI LẠ'}
+                    </span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.62rem' }}>{lastScanResult.time}</span>
+                  </div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.8rem', marginTop: '2px' }}>
+                    {lastScanResult.full_name} {lastScanResult.student_id !== 'UNKNOWN' && `(${lastScanResult.student_id})`}
+                  </div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>
+                    Vector Match: {lastScanResult.confidence}% {lastScanResult.isManual ? '(Nhập tay)' : lastScanResult.isMock ? '(Giả lập)' : ''}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.72rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                <HelpCircle size={18} />
+                <span>Chưa có dữ liệu quét khuôn mặt gần đây.</span>
+                <span style={{ fontSize: '0.62rem' }}>Học sinh đứng trước camera để hệ thống điểm danh tự động.</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 3. RIGHT COLUMN: Trip Roster & Manual Fallback */}
+        <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Users size={16} color="var(--accent-bus)" /> Roster & Kiểm Tra Thủ Công
+            </h3>
+            {isTripActive && (
+              <span className="badge-safe" style={{ fontSize: '0.65rem' }}>
+                ĐANG CHẠY
+              </span>
+            )}
+          </div>
+
+          {/* Trip Control Buttons */}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {!isTripActive ? (
+              <button 
+                onClick={handleStartTrip}
+                className="btn-primary"
+                style={{ width: '100%', justifyContent: 'center', fontSize: '0.75rem', padding: '8px', background: 'linear-gradient(135deg, var(--emerald-safe), #059669)' }}
+              >
+                <Play size={14} /> BẮT ĐẦU CHUYẾN ĐI
               </button>
+            ) : (
+              <button 
+                onClick={handleEndTrip}
+                className="btn-sos"
+                style={{ width: '100%', justifyContent: 'center', fontSize: '0.75rem', padding: '8px', animation: 'none', boxShadow: 'none' }}
+              >
+                <Square size={14} /> KẾT THÚC CHUYẾN ĐI
+              </button>
+            )}
+          </div>
+
+          {/* Trip Statistics Summary */}
+          {isTripActive && tripRosterState && (
+            <div style={{ 
+              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px',
+              background: 'var(--bg-card-hover)', border: '1px solid var(--border-card)',
+              padding: '8px', borderRadius: '8px', fontSize: '0.68rem', textAlign: 'center'
+            }}>
+              <div>
+                <div style={{ color: 'var(--text-muted)' }}>Chưa Lên</div>
+                <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>
+                  {tripRosterState.counts.not_boarded}
+                </div>
+              </div>
+              <div>
+                <div style={{ color: 'var(--primary-blue)' }}>Trên Xe</div>
+                <div style={{ fontWeight: 800, color: 'var(--primary-blue)', fontSize: '0.95rem' }}>
+                  {tripRosterState.counts.on_bus}
+                </div>
+              </div>
+              <div>
+                <div style={{ color: 'var(--emerald-safe)' }}>Đã Xuống</div>
+                <div style={{ fontWeight: 800, color: 'var(--emerald-safe)', fontSize: '0.95rem' }}>
+                  {tripRosterState.counts.alighted}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Roster student list for manual fallback */}
+          <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '160px' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+              Danh sách điểm danh:
+            </div>
+            
+            {!isTripActive ? (
+              <div style={{ 
+                flexGrow: 1, display: 'flex', flexDirection: 'column', 
+                alignItems: 'center', justifyContent: 'center', 
+                color: 'var(--text-muted)', fontSize: '0.7rem', 
+                textAlign: 'center', padding: '20px',
+                border: '1px dashed var(--border-card)', borderRadius: '10px'
+              }}>
+                <UserCheck size={20} />
+                <span style={{ marginTop: '6px' }}>Ấn "Bắt Đầu Chuyến Đi" để nạp danh sách học sinh lên xe.</span>
+              </div>
+            ) : tripRosterState ? (
+              <div style={{ 
+                display: 'flex', flexDirection: 'column', gap: '6px', 
+                overflowY: 'auto', maxHeight: '180px' 
+              }}>
+                {tripRosterState.entries.map(s => {
+                  let statusLabel = 'Chưa lên';
+                  let statusColor = 'var(--text-muted)';
+                  
+                  if (s.status === 'on_bus') {
+                    statusLabel = `Đã lên (${s.boarded_at})`;
+                    statusColor = 'var(--primary-blue)';
+                  } else if (s.status === 'alighted') {
+                    statusLabel = `Đã xuống (${s.alighted_at})`;
+                    statusColor = 'var(--emerald-safe)';
+                  }
+
+                  return (
+                    <div key={s.student_id} style={{ 
+                      background: 'var(--bg-card)', border: '1px solid var(--border-card)',
+                      borderRadius: '8px', padding: '6px 8px', fontSize: '0.7rem',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                    }}>
+                      <div>
+                        <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>{s.full_name}</div>
+                        <div style={{ fontSize: '0.62rem', color: statusColor, fontWeight: 600 }}>{statusLabel}</div>
+                      </div>
+
+                      {/* Manual boarding/alighting buttons */}
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button 
+                          onClick={() => handleManualCheck(s.student_id, 'boarded')}
+                          disabled={s.status === 'on_bus'}
+                          style={{ 
+                            background: s.status === 'on_bus' ? 'rgba(37,99,235,0.1)' : 'var(--bg-card-hover)',
+                            border: '1px solid var(--border-card)',
+                            borderRadius: '4px', padding: '3px 6px', fontSize: '0.6rem',
+                            cursor: 'pointer', color: s.status === 'on_bus' ? 'var(--primary-blue)' : 'var(--text-main)'
+                          }}
+                        >
+                          Lên xe
+                        </button>
+                        <button 
+                          onClick={() => handleManualCheck(s.student_id, 'alighted')}
+                          disabled={s.status === 'alighted'}
+                          style={{ 
+                            background: s.status === 'alighted' ? 'rgba(5,150,105,0.1)' : 'var(--bg-card-hover)',
+                            border: '1px solid var(--border-card)',
+                            borderRadius: '4px', padding: '3px 6px', fontSize: '0.6rem',
+                            cursor: 'pointer', color: s.status === 'alighted' ? 'var(--emerald-safe)' : 'var(--text-main)'
+                          }}
+                        >
+                          Xuống
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+
+          {/* Sweep & Warnings Section */}
+          {sweepState !== 'idle' && (
+            <div style={{ borderTop: '1px solid var(--border-card)', paddingTop: '10px' }}>
+              {sweepState === 'scanning' && (
+                <div style={{ textAlign: 'center', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ width: '22px', height: '22px', border: '3px solid rgba(8,145,178,0.2)', borderTopColor: 'var(--accent-cyan)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                  <div style={{ color: 'var(--accent-cyan)', fontWeight: 700, fontSize: '0.7rem' }}>AI ĐANG QUÉT KHOANG XE...</div>
+                </div>
+              )}
+
+              {sweepState === 'clear' && (
+                <div style={{ 
+                  background: 'rgba(5,150,105,0.08)', border: '1px solid var(--emerald-safe)', 
+                  borderRadius: '10px', padding: '10px', textAlign: 'center', 
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' 
+                }}>
+                  <CheckCircle2 size={24} color="var(--emerald-safe)" />
+                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--emerald-safe)' }}>
+                    KHOANG XE TRỐNG - AN TOÀN!
+                  </div>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                    Đã quét toàn bộ các ghế. Có thể tắt máy xe.
+                  </div>
+                </div>
+              )}
+
+              {sweepState === 'found' && (
+                <div style={{ 
+                  background: 'rgba(220,38,38,0.08)', border: '1px solid var(--danger-red)', 
+                  borderRadius: '10px', padding: '10px', textAlign: 'center', 
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                  animation: 'pulse-danger 1.5s infinite' 
+                }}>
+                  <AlertTriangle size={24} color="var(--danger-red)" />
+                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--danger-red)' }}>
+                    CẢNH BÁO: HỌC SINH BỊ BỎ QUÊN!
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-main)', fontWeight: 700 }}>
+                    {tripRosterState?.still_on_bus.join(', ')} vẫn còn trên xe!
+                  </div>
+                  <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>
+                    Yêu cầu kiểm tra khoang xe ngay lập tức.
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
         </div>
+
       </div>
 
-      {/* Keyframe spin cho loading */}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { animation: spin 1s linear infinite; }
+      `}</style>
     </div>
   );
 }

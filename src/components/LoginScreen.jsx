@@ -85,14 +85,14 @@ export default function LoginScreen({ onLogin }) {
       alignItems: 'center',
       justifyContent: 'center',
       padding: '24px',
-      background: 'radial-gradient(circle at 50% 30%, rgba(28, 37, 65, 0.95) 0%, rgba(11, 19, 43, 1) 100%)',
+      background: 'radial-gradient(circle at 50% 30%, var(--bg-card-hover) 0%, var(--bg-dark) 100%)',
       position: 'relative',
       overflow: 'hidden'
     }}>
       
       {/* Background glowing particles */}
-      <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(6, 182, 212, 0.12)', filter: 'blur(80px)' }} />
-      <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.08)', filter: 'blur(80px)' }} />
+      <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(8, 145, 178, 0.06)', filter: 'blur(80px)' }} />
+      <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(217, 119, 6, 0.04)', filter: 'blur(80px)' }} />
 
       <div style={{ width: '900px', maxWidth: '100%', display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: '24px', zIndex: 10 }}>
         
@@ -129,7 +129,7 @@ export default function LoginScreen({ onLogin }) {
                     key={user.role}
                     onClick={() => handleFillAccount(user)}
                     style={{
-                      background: isCurrent ? 'rgba(28, 37, 65, 0.95)' : 'rgba(255, 255, 255, 0.03)',
+                      background: isCurrent ? 'var(--bg-card-hover)' : 'var(--bg-card)',
                       border: isCurrent ? `2px solid ${user.color}` : '1px solid var(--border-card)',
                       borderRadius: '12px',
                       padding: '10px 14px',
@@ -141,11 +141,11 @@ export default function LoginScreen({ onLogin }) {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ background: `rgba(${user.role === 'admin' ? '6,182,212' : user.role === 'driver' ? '245,158,11' : user.role === 'teacher' ? '16,185,129' : '56,189,248'}, 0.2)`, padding: '6px', borderRadius: '6px' }}>
+                      <div style={{ background: `rgba(${user.role === 'admin' ? '6,182,212' : user.role === 'driver' ? '245,158,11' : user.role === 'teacher' ? '16,185,129' : '56,189,248'}, 0.15)`, padding: '6px', borderRadius: '6px' }}>
                         <Icon size={16} color={user.color} />
                       </div>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#fff' }}>{user.roleTitle}</div>
+                        <div style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-main)' }}>{user.roleTitle}</div>
                         <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{user.email}</div>
                       </div>
                     </div>
@@ -173,7 +173,7 @@ export default function LoginScreen({ onLogin }) {
             <span className="badge-ai" style={{ marginBottom: '8px' }}>
               <Key size={12} /> Đăng Nhập Tự Động Phân Quyền
             </span>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fff', marginTop: '6px' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '6px' }}>
               Đăng Nhập EduSafe Bus
             </h2>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -182,7 +182,7 @@ export default function LoginScreen({ onLogin }) {
           </div>
 
           {errorMsg && (
-            <div style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', color: '#f87171', padding: '10px', borderRadius: '8px', fontSize: '0.75rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: 'var(--danger-red)', padding: '10px', borderRadius: '8px', fontSize: '0.75rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <AlertCircle size={16} /> {errorMsg}
             </div>
           )}
@@ -204,11 +204,11 @@ export default function LoginScreen({ onLogin }) {
                   placeholder="admin@edusafe.edu.vn"
                   style={{
                     width: '100%',
-                    background: 'rgba(11, 19, 43, 0.8)',
+                    background: 'var(--bg-card-hover)',
                     border: '1px solid var(--border-card)',
                     borderRadius: '10px',
                     padding: '10px 12px 10px 38px',
-                    color: '#fff',
+                    color: 'var(--text-main)',
                     fontSize: '0.85rem',
                     outline: 'none'
                   }}
@@ -231,11 +231,11 @@ export default function LoginScreen({ onLogin }) {
                   placeholder="••••••••"
                   style={{
                     width: '100%',
-                    background: 'rgba(11, 19, 43, 0.8)',
+                    background: 'var(--bg-card-hover)',
                     border: '1px solid var(--border-card)',
                     borderRadius: '10px',
                     padding: '10px 12px 10px 38px',
-                    color: '#fff',
+                    color: 'var(--text-main)',
                     fontSize: '0.85rem',
                     outline: 'none'
                   }}

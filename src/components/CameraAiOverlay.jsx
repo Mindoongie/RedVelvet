@@ -162,19 +162,18 @@ export default function CameraAiOverlay({
                 position: 'absolute',
                 width: '170px',
                 height: '190px',
-                border: '2px stroke #34d399',
-                borderStyle: 'solid',
+                border: '2px solid var(--emerald-safe)',
                 borderRadius: '14px',
-                boxShadow: '0 0 20px rgba(16, 185, 129, 0.3)',
-                background: 'rgba(16, 185, 129, 0.05)'
+                boxShadow: '0 0 20px rgba(4, 120, 87, 0.15)',
+                background: 'rgba(4, 120, 87, 0.05)'
               }}>
-                <div style={{ position: 'absolute', top: -4, left: -4, width: 12, height: 12, borderTop: '3px solid #34d399', borderLeft: '3px solid #34d399' }} />
-                <div style={{ position: 'absolute', top: -4, right: -4, width: 12, height: 12, borderTop: '3px solid #34d399', borderRight: '3px solid #34d399' }} />
-                <div style={{ position: 'absolute', bottom: -4, left: -4, width: 12, height: 12, borderBottom: '3px solid #34d399', borderLeft: '3px solid #34d399' }} />
-                <div style={{ position: 'absolute', bottom: -4, right: -4, width: 12, height: 12, borderBottom: '3px solid #34d399', borderRight: '3px solid #34d399' }} />
+                <div style={{ position: 'absolute', top: -4, left: -4, width: 12, height: 12, borderTop: '3px solid var(--emerald-safe)', borderLeft: '3px solid var(--emerald-safe)' }} />
+                <div style={{ position: 'absolute', top: -4, right: -4, width: 12, height: 12, borderTop: '3px solid var(--emerald-safe)', borderRight: '3px solid var(--emerald-safe)' }} />
+                <div style={{ position: 'absolute', bottom: -4, left: -4, width: 12, height: 12, borderBottom: '3px solid var(--emerald-safe)', borderLeft: '3px solid var(--emerald-safe)' }} />
+                <div style={{ position: 'absolute', bottom: -4, right: -4, width: 12, height: 12, borderBottom: '3px solid var(--emerald-safe)', borderRight: '3px solid var(--emerald-safe)' }} />
 
-                <div style={{ position: 'absolute', bottom: '10px', left: '10px', right: '10px', background: 'rgba(15, 23, 42, 0.9)', padding: '4px 6px', borderRadius: '6px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#34d399' }}>
+                <div style={{ position: 'absolute', bottom: '10px', left: '10px', right: '10px', background: 'var(--bg-card)', border: '1px solid var(--border-card)', padding: '4px 6px', borderRadius: '6px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--emerald-safe)' }}>
                     Em: Nguyễn Minh Anh
                   </div>
                   <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>

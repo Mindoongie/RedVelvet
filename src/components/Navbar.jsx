@@ -49,11 +49,11 @@ export default function Navbar({
           <img 
             src="/edusafe_logo.png" 
             alt="EduSafe Logo" 
-            style={{ width: '42px', height: '42px', borderRadius: '10px', objectFit: 'cover', boxShadow: '0 0 12px rgba(6,182,212,0.4)' }}
+            style={{ width: '42px', height: '42px', borderRadius: '10px', objectFit: 'cover', boxShadow: '0 0 12px rgba(8,145,178,0.2)' }}
           />
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h1 style={{ fontSize: '1.25rem', fontWeight: '800', background: 'linear-gradient(90deg, #38bdf8, #34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              <h1 style={{ fontSize: '1.25rem', fontWeight: '800', background: 'linear-gradient(90deg, #0891b2, #059669)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 EduSafe Bus
               </h1>
               <span className="badge-ai" style={{ fontSize: '0.65rem' }}>
@@ -62,7 +62,7 @@ export default function Navbar({
             </div>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <User size={12} color="var(--accent-cyan)" />
-              <span style={{ color: '#fff', fontWeight: 600 }}>{currentUser.name}</span> ({currentUser.email})
+              <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{currentUser.name}</span> ({currentUser.email})
             </p>
           </div>
         </div>
@@ -81,7 +81,7 @@ export default function Navbar({
             const anyVisible = Object.values(show).some(Boolean);
             if (!anyVisible) return null;
             return (
-              <div style={{ display: 'flex', gap: '6px', background: 'rgba(0,0,0,0.3)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-card)' }}>
+              <div style={{ display: 'flex', gap: '6px', background: 'var(--bg-card)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-card)' }}>
                 {show.drowsiness && (
                   <button
                     style={{
@@ -156,7 +156,7 @@ export default function Navbar({
           {/* Logout Button */}
           <button 
             className="btn-secondary" 
-            style={{ fontSize: '0.8rem', padding: '6px 12px', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
+            style={{ fontSize: '0.8rem', padding: '6px 12px', borderColor: 'rgba(220, 38, 38, 0.3)', color: 'var(--danger-red)' }}
             onClick={onLogout}
             title="Đăng xuất khỏi phân quyền"
           >

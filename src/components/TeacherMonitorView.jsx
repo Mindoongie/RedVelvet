@@ -22,10 +22,10 @@ const INITIAL_STUDENTS = [
 
 // ─── Trạng thái hiển thị ─────────────────────────────────────────────────────
 const STATUS_META = {
-  scanned: { label: 'Đã Quét',     color: '#34d399', bg: 'rgba(16,185,129,0.15)', border: '#10b981' },
-  failed:  { label: 'Quét Thất Bại', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', border: '#f59e0b' },
-  manual:  { label: 'Điểm Danh Thủ Công', color: '#38bdf8', bg: 'rgba(6,182,212,0.15)', border: '#06b6d4' },
-  waiting: { label: 'Chờ Quét',    color: '#94a3b8', bg: 'rgba(255,255,255,0.04)', border: 'var(--border-card)' },
+  scanned: { label: 'Đã Quét',     color: 'var(--emerald-safe)', bg: 'rgba(4,120,87,0.06)', border: 'rgba(4,120,87,0.2)' },
+  failed:  { label: 'Quét Thất Bại', color: 'var(--accent-bus)', bg: 'rgba(180,83,9,0.06)', border: 'rgba(180,83,9,0.2)' },
+  manual:  { label: 'Điểm Danh Thủ Công', color: 'var(--primary-blue)', bg: 'rgba(29,78,216,0.06)', border: 'rgba(29,78,216,0.2)' },
+  waiting: { label: 'Chờ Quét',    color: 'var(--text-muted)', bg: 'var(--bg-card-hover)', border: 'var(--border-card)' },
 };
 
 export default function TeacherMonitorView({ simulations, openSosModal }) {
@@ -70,7 +70,7 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
             <School size={18} /> GIÁM SÁT TỪ TRƯỜNG
           </div>
           <div>
-            <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff' }}>GIÁO VIÊN: TRẦN THỊ THU</h2>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>GIÁO VIÊN: TRẦN THỊ THU</h2>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
               Theo dõi điểm danh khuôn mặt từ xa · Xác nhận thủ công khi AI quét thất bại
             </p>
@@ -98,10 +98,10 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
       {/* ── KPI Summary ─────────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
         {[
-          { label: 'Đã Quét AI',          value: counts.scanned, color: '#34d399', icon: <Camera size={18} color="#34d399" /> },
-          { label: 'Điểm Danh Thủ Công',  value: counts.manual,  color: '#38bdf8', icon: <PenLine size={18} color="#38bdf8" /> },
-          { label: 'Quét Thất Bại',        value: counts.failed,  color: '#f59e0b', icon: <XCircle size={18} color="#f59e0b" /> },
-          { label: 'Chờ Quét',             value: counts.waiting, color: '#94a3b8', icon: <Clock   size={18} color="#94a3b8" /> },
+          { label: 'Đã Quét AI',          value: counts.scanned, color: 'var(--emerald-safe)', icon: <Camera size={18} color="var(--emerald-safe)" /> },
+          { label: 'Điểm Danh Thủ Công',  value: counts.manual,  color: 'var(--primary-blue)',  icon: <PenLine size={18} color="var(--primary-blue)" /> },
+          { label: 'Quét Thất Bại',        value: counts.failed,  color: 'var(--accent-bus)',  icon: <XCircle size={18} color="var(--accent-bus)" /> },
+          { label: 'Chờ Quét',             value: counts.waiting, color: 'var(--text-muted)', icon: <Clock   size={18} color="var(--text-muted)" /> },
         ].map(k => (
           <div key={k.label} className="glass-panel" style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
@@ -132,10 +132,10 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
           {/* Cột trái: Camera feed từ xe (nhận qua AI) */}
           <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Camera size={16} color="var(--accent-cyan)" /> Feed Camera Xe (face-api.js)
               </h3>
-              <span className="badge-safe" style={{ fontSize: '0.65rem' }}>128-D Vector</span>
+              <span className="badge-ai" style={{ fontSize: '0.65rem' }}>128-D Vector</span>
             </div>
 
             {/* Camera overlay */}
@@ -150,13 +150,13 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
                   <div style={{ position: 'absolute', top: -4, right: -4, width: 12, height: 12, borderTop: '3px solid #34d399', borderRight: '3px solid #34d399' }} />
                   <div style={{ position: 'absolute', bottom: -4, left: -4, width: 12, height: 12, borderBottom: '3px solid #34d399', borderLeft: '3px solid #34d399' }} />
                   <div style={{ position: 'absolute', bottom: -4, right: -4, width: 12, height: 12, borderBottom: '3px solid #34d399', borderRight: '3px solid #34d399' }} />
-                  <div style={{ position: 'absolute', bottom: 8, left: 8, right: 8, background: 'rgba(10,20,40,0.9)', padding: '4px 6px', borderRadius: '6px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 700 }}>Nguyễn Minh Anh</div>
-                    <div style={{ fontSize: '0.62rem', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>Match: 99.4% ✓</div>
+                  <div style={{ position: 'absolute', bottom: 8, left: 8, right: 8, background: 'var(--bg-card)', padding: '4px 6px', borderRadius: '6px', textAlign: 'center', border: '1px solid var(--border-card)' }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--emerald-safe)', fontWeight: 700 }}>Nguyễn Minh Anh</div>
+                    <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>Match: 99.4% ✓</div>
                   </div>
                 </div>
                 <div style={{ position: 'absolute', top: 10, left: 10 }}>
-                  <span className="badge-ai" style={{ fontSize: '0.62rem', background: 'rgba(10,20,40,0.85)', backdropFilter: 'blur(6px)' }}>
+                  <span className="badge-ai" style={{ fontSize: '0.62rem', background: 'var(--bg-card)', backdropFilter: 'blur(6px)' }}>
                     <Camera size={10} /> Live từ Xe Bus 01
                   </span>
                 </div>
@@ -164,11 +164,11 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
             </div>
 
             {/* Kết quả quét cuối */}
-            <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-card)', fontSize: '0.78rem' }}>
-              <div style={{ color: '#34d399', fontWeight: 600, marginBottom: '4px', display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <div style={{ background: 'var(--bg-card-hover)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-card)', fontSize: '0.78rem' }}>
+              <div style={{ color: 'var(--emerald-safe)', fontWeight: 600, marginBottom: '4px', display: 'flex', gap: '6px', alignItems: 'center' }}>
                 <CheckCircle2 size={14} /> Lần quét gần nhất thành công:
               </div>
-              <div style={{ color: '#fff' }}>Nguyễn Minh Anh – Lớp 3A</div>
+              <div style={{ color: 'var(--text-main)' }}>Nguyễn Minh Anh – Lớp 3A</div>
               <div style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
                 Dist: 0.12 / threshold 0.60 · Lên xe 07:15
               </div>
@@ -178,10 +178,10 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
                 <span>Tiến độ điểm danh</span>
-                <span style={{ color: '#fff', fontWeight: 700 }}>{onBus} / {students.length} học sinh</span>
+                <span style={{ color: 'var(--text-main)', fontWeight: 700 }}>{onBus} / {students.length} học sinh</span>
               </div>
-              <div style={{ height: '8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${(onBus / students.length) * 100}%`, background: 'linear-gradient(90deg, #10b981, #06b6d4)', borderRadius: '4px', transition: 'width 0.4s ease' }} />
+              <div style={{ height: '8px', background: 'var(--border-card)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${(onBus / students.length) * 100}%`, background: 'linear-gradient(90deg, var(--emerald-safe), var(--accent-cyan))', borderRadius: '4px', transition: 'width 0.4s ease' }} />
               </div>
             </div>
           </div>
@@ -189,7 +189,7 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
           {/* Cột phải: Danh sách điểm danh */}
           <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>
                 Danh Sách Học Sinh – Điểm Danh & Xác Nhận Thủ Công
               </h3>
               <span className="badge-ai" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem' }}>
@@ -208,8 +208,8 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px' }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                          <span style={{ fontWeight: 700, color: '#fff', fontSize: '0.88rem' }}>{st.name}</span>
-                          <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.1)', color: 'var(--text-muted)', padding: '1px 6px', borderRadius: '4px' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.88rem' }}>{st.name}</span>
+                          <span style={{ fontSize: '0.65rem', background: 'var(--bg-card-hover)', color: 'var(--text-muted)', padding: '1px 6px', borderRadius: '4px', border: '1px solid var(--border-card)' }}>
                             Lớp {st.cls}
                           </span>
                         </div>
@@ -226,7 +226,7 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {/* Badge trạng thái */}
-                        <span style={{ fontSize: '0.65rem', fontWeight: 700, color: meta.color, background: 'rgba(0,0,0,0.3)', border: `1px solid ${meta.border}`, padding: '3px 8px', borderRadius: '12px', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: '0.65rem', fontWeight: 700, color: meta.color, background: 'var(--bg-card)', border: `1px solid ${meta.border}`, padding: '3px 8px', borderRadius: '12px', whiteSpace: 'nowrap' }}>
                           {meta.label}
                         </span>
 
@@ -234,7 +234,7 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
                         {needsAction && (
                           <button
                             onClick={() => setConfirmTarget(confirmTarget === st.id ? null : st.id)}
-                            style={{ background: 'rgba(6,182,212,0.2)', border: '1px solid var(--accent-cyan)', color: '#38bdf8', borderRadius: '6px', padding: '4px 10px', fontSize: '0.7rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            style={{ background: 'rgba(8,145,178,0.1)', border: '1px solid var(--accent-cyan)', color: 'var(--accent-cyan)', borderRadius: '6px', padding: '4px 10px', fontSize: '0.7rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                           >
                             <PenLine size={12} />
                             {st.status === 'failed' ? 'Xử Lý' : 'Điểm Danh'}
@@ -256,9 +256,9 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
 
                     {/* Panel xử lý khi mở rộng */}
                     {confirmTarget === st.id && (
-                      <div style={{ borderTop: `1px solid ${meta.border}`, padding: '12px 14px', background: 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ borderTop: `1px solid ${meta.border}`, padding: '12px 14px', background: 'var(--bg-card-hover)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {st.status === 'failed' && (
-                          <p style={{ fontSize: '0.75rem', color: '#fbbf24', marginBottom: '4px' }}>
+                          <p style={{ fontSize: '0.75rem', color: 'var(--accent-bus)', marginBottom: '4px' }}>
                             ⚠ AI không nhận ra khuôn mặt (độ tin cậy {st.confidence}%). Giáo viên xác nhận hoặc đánh dấu vắng:
                           </p>
                         )}
@@ -271,13 +271,13 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button
                             onClick={() => handleManualConfirm(st.id)}
-                            style={{ flex: 1, background: 'rgba(16,185,129,0.2)', border: '1px solid #10b981', color: '#34d399', borderRadius: '8px', padding: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                            style={{ flex: 1, background: 'rgba(4,120,87,0.1)', border: '1px solid var(--emerald-safe)', color: 'var(--emerald-safe)', borderRadius: '8px', padding: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                           >
                             <CheckCircle2 size={14} /> Xác Nhận Có Mặt (Điểm Danh Thủ Công)
                           </button>
                           <button
                             onClick={() => handleMarkAbsent(st.id)}
-                            style={{ flex: 1, background: 'rgba(239,68,68,0.2)', border: '1px solid #ef4444', color: '#f87171', borderRadius: '8px', padding: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                            style={{ flex: 1, background: 'rgba(185,28,28,0.1)', border: '1px solid var(--danger-red)', color: 'var(--danger-red)', borderRadius: '8px', padding: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                           >
                             <XCircle size={14} /> AI Quét Nhầm – Đánh Dấu Vắng
                           </button>
@@ -297,7 +297,7 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
       ══════════════════════════════════════════════════════════════════════ */}
       {activeTab === 'map' && (
         <div className="glass-panel" style={{ padding: '20px' }}>
-          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <MapPin size={16} color="var(--accent-cyan)" /> Vị Trí Xe Bus 01 – Thời Gian Thực
           </h3>
           <div style={{ height: '420px' }}>
