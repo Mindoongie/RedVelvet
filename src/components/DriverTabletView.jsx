@@ -45,43 +45,25 @@ export default function DriverTabletView({ simulations }) {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  const realtimeMetricsRef = useRef({ ear: null, mar: null, pitch: null });
+
   // Run periodic Drowsiness check via the DrowsinessEngine
   useEffect(() => {
     const interval = setInterval(() => {
-      // Determine simulated EAR, MAR, Pitch based on simulation state
       let earInput = 0.28;
       let marInput = 0.10;
       let pitchInput = 0;
 
-      if (simulations.drowsiness) {
-        // Driver is simulated as drowsy: cycle between eyes closed, yawns and head nods
-        const timeFactor = Date.now() % 15000;
-        if (timeFactor < 5000) {
-          // Yawning phase
-          earInput = 0.25;
-          marInput = 0.65;
-          pitchInput = 5;
-        } else if (timeFactor < 10000) {
-          // Closed eyes (nhắm mắt)
-          earInput = 0.14;
-          marInput = 0.10;
-          pitchInput = 10;
-        } else {
-          // Head nodding (gật đầu)
-          earInput = 0.22;
-          marInput = 0.15;
-          pitchInput = 25;
-        }
+      const realMetrics = realtimeMetricsRef.current;
+      if (realMetrics.ear !== null) {
+        earInput = realMetrics.ear;
+        marInput = realMetrics.mar;
+        pitchInput = realMetrics.pitch;
       } else {
-        // Normal blinking
-        const blinkFactor = Date.now() % 4000;
-        if (blinkFactor < 200) {
-          earInput = 0.12; // normal blink
-        } else {
-          earInput = 0.28 + Math.random() * 0.02;
-        }
-        marInput = 0.10 + Math.random() * 0.04;
-        pitchInput = (Math.random() - 0.5) * 4;
+        // Webcam is off or no face detected. Keep completely static, do not jump.
+        earInput = 0.28;
+        marInput = 0.10;
+        pitchInput = 0;
       }
 
       const res = detectorRef.current.processFrame(earInput, marInput, pitchInput, contextLevel);
@@ -100,18 +82,23 @@ export default function DriverTabletView({ simulations }) {
       });
 
       // Play beep sound if Layer 1 reflex triggers
-      if (res.isL1Triggered && audioEnabled) {
+      if (res.isL1Triggered) {
         playBeepAlert();
       }
     }, 250);
 
     return () => clearInterval(interval);
-  }, [simulations.drowsiness, audioEnabled, contextLevel]);
+  }, [contextLevel]);
 
   const isDrowsy = drowsinessState.alertLevel >= 2;
 
   // ─── Trạng thái Chuyến xe & Điểm danh ──────────────────────────────────────
   const [isTripActive, setIsTripActive] = useState(false);
+  const isTripActiveRef = useRef(isTripActive);
+  useEffect(() => {
+    isTripActiveRef.current = isTripActive;
+  }, [isTripActive]);
+
   const [scanMode, setScanMode] = useState('boarded'); // 'boarded' (lên xe) | 'alighted' (xuống xe)
   const [tripRosterState, setTripRosterState] = useState(null);
   
@@ -130,13 +117,15 @@ export default function DriverTabletView({ simulations }) {
   const lastScannedTimeRef = useRef(null);
   const lastUnknownTimeRef = useRef(null);
 
-  // Load current trip status on mount
+  // Load current trip status and auto load face models on mount
   useEffect(() => {
     const current = getRoster('BUS-01');
     if (current) {
       setIsTripActive(true);
       setTripRosterState(rosterSummary(current));
     }
+    // Auto load AI models so they are ready for both driver monitoring and student attendance
+    initAiModels();
   }, []);
 
   const playBeepAlert = () => {
@@ -240,12 +229,14 @@ export default function DriverTabletView({ simulations }) {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 320, height: 240, facingMode: 'user' }
       });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        setCameraActive(true);
-        startFaceScanLoop();
-      }
+      setCameraActive(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          streamRef.current = stream;
+          startFaceScanLoop();
+        }
+      }, 50);
     } catch (err) {
       alert('Không thể truy cập camera: ' + err.message);
     }
@@ -277,7 +268,7 @@ export default function DriverTabletView({ simulations }) {
         const canvas = canvasRef.current;
         const faceapi = window.faceapi;
 
-        if (faceapi && isTripActive) {
+        if (faceapi && isTripActiveRef.current) {
           const result = await faceapi.detectSingleFace(
             video,
             new faceapi.TinyFaceDetectorOptions({ inputSize: 224 })
@@ -343,40 +334,7 @@ export default function DriverTabletView({ simulations }) {
     drawLoopRef.current = requestAnimationFrame(detectAndScan);
   };
 
-  // Mock AI scan for testing without camera
-  const triggerMockScan = () => {
-    if (!isTripActive || !tripRosterState) {
-      alert('Vui lòng Bắt đầu chuyến xe trước!');
-      return;
-    }
-    const entries = tripRosterState.entries;
-    
-    // Find expected students to check in
-    const targetStatus = scanMode === 'boarded' ? 'not_boarded' : 'on_bus';
-    const candidates = entries.filter(e => e.status === targetStatus);
 
-    if (candidates.length === 0) {
-      alert(`Tất cả học sinh đã ${scanMode === 'boarded' ? 'lên xe' : 'xuống xe'}!`);
-      return;
-    }
-
-    // Pick random candidate
-    const student = candidates[Math.floor(Math.random() * candidates.length)];
-    const scanRes = registerScan('BUS-01', student.student_id, scanMode === 'boarded' ? 'boarded' : 'alighted');
-    
-    if (scanRes.success) {
-      playBeepSuccess();
-      setLastScanResult({
-        student_id: student.student_id,
-        full_name: student.full_name,
-        confidence: Math.round(92 + Math.random() * 7),
-        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        success: true,
-        isMock: true
-      });
-      setTripRosterState(scanRes.roster);
-    }
-  };
 
   useEffect(() => {
     return () => {
@@ -454,41 +412,49 @@ export default function DriverTabletView({ simulations }) {
       )}
 
       {/* ── MAIN COCKPIT VIEW AREA ─────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr 1.2fr', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
 
         {/* 1. LEFT COLUMN: Driver Fatigue Safety (Inferensys AI) */}
-        <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div className="glass-panel" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Eye size={16} color="var(--accent-cyan)" /> Giám Sát Tài Xế
+            <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Eye size={15} color="var(--accent-cyan)" /> Giám Sát Tài Xế
             </h3>
-            <span className={isDrowsy ? 'badge-danger' : 'badge-safe'} style={{ fontSize: '0.65rem' }}>
+            <span className={isDrowsy ? 'badge-danger' : 'badge-safe'} style={{ fontSize: '0.62rem' }}>
               {isDrowsy ? `MỆT MỎI CẤP ${drowsinessState.alertLevel}` : 'TỈNH TÁO'}
             </span>
           </div>
 
           <div style={{ height: '210px' }}>
-            <CameraAiOverlay mode="driver" isDrowsy={isDrowsy} ear={earValue} mar={marValue} />
+            <CameraAiOverlay 
+              mode="driver" 
+              isDrowsy={isDrowsy} 
+              ear={earValue} 
+              mar={marValue} 
+              onMetricsUpdate={(ear, mar, pitch) => {
+                realtimeMetricsRef.current = { ear, mar, pitch };
+              }}
+            />
           </div>
 
           {/* Indices */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
             {[
               { label: 'EAR (Chỉ số mở mắt)', value: earValue.toFixed(2), bad: earValue < 0.20, note: 'Chuẩn ≥ 0.20 (Vùng chết: 0.19-0.23)' },
               { label: 'MAR (Chỉ số ngáp)', value: marValue.toFixed(2), bad: marValue > 0.55, note: 'Chuẩn < 0.55' },
               { label: 'PERCLOS (Tỉ lệ nhắm mắt)', value: `${(drowsinessState.perclos * 100).toFixed(1)}%`, bad: drowsinessState.perclos >= 0.35, note: 'Cửa sổ trượt 60s' },
-              { label: 'Ngáp & Gật đầu', value: `${drowsinessState.yawnsPerMin.toFixed(1)} ypm / ${drowsinessState.nodsPerMin.toFixed(1)} npm`, bad: drowsinessState.yawnsPerMin > 1.0 || drowsinessState.nodsPerMin > 1.0, note: 'Cửa sổ trượt 3p' },
+              { label: 'Ngáp & Gật đầu', value: `${drowsinessState.yawnsPerMin.toFixed(1)} ypm / ${drowsinessState.nodsPerMin.toFixed(1)} npm`, bad: drowsinessState.yawnsPerMin > 1.0 || drowsinessState.nodsPerMin > 1.0, note: 'Cửa sổ trượt 1p' },
               { label: 'Risk Score (Độ rủi ro)', value: `${riskScore}%`, bad: riskScore > 50, note: 'Noisy-OR Fusion' },
             ].map(m => (
               <div key={m.label} style={{ 
                 background: 'var(--bg-card-hover)', 
-                padding: '10px 12px', 
-                borderRadius: '8px', 
+                padding: '6px 10px', 
+                borderRadius: '6px', 
                 border: '1px solid var(--border-card)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                fontSize: '0.72rem'
+                fontSize: '0.68rem'
               }}>
                 <div>
                   <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{m.label}</div>
@@ -508,7 +474,7 @@ export default function DriverTabletView({ simulations }) {
         </div>
 
         {/* 2. MIDDLE COLUMN: Student Face Scan Camera (1 Camera) */}
-        <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div className="glass-panel" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Camera size={16} color="var(--primary-teal)" /> AI Attendance Stream
@@ -538,44 +504,65 @@ export default function DriverTabletView({ simulations }) {
             overflow: 'hidden',
             border: '1px solid var(--border-card)'
           }}>
-            {cameraActive ? (
-              <>
-                <video 
-                  ref={videoRef} 
-                  autoPlay 
-                  playsInline 
-                  muted 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                />
-                <canvas 
-                  ref={canvasRef} 
-                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} 
-                />
-                {/* Mode Tag */}
-                <div style={{ 
-                  position: 'absolute', top: 8, left: 8, 
-                  background: scanMode === 'boarded' ? 'rgba(5,150,105,0.9)' : 'rgba(217,119,6,0.9)',
-                  color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700 
-                }}>
-                  ĐANG ĐIỂM DANH: {scanMode === 'boarded' ? 'LÊN XE' : 'XUỐNG XE'}
-                </div>
-              </>
-            ) : (
+            {/* video element is always rendered to prevent null ref on startWebcam */}
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              playsInline 
+              muted 
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'cover',
+                display: cameraActive ? 'block' : 'none'
+              }} 
+            />
+            <canvas 
+              ref={canvasRef} 
+              style={{ 
+                position: 'absolute', 
+                top: 0, 
+                left: 0, 
+                width: '100%', 
+                height: '100%',
+                display: cameraActive ? 'block' : 'none'
+              }} 
+            />
+
+            {cameraActive && (
+              <div style={{ 
+                position: 'absolute', top: 8, left: 8, 
+                background: scanMode === 'boarded' ? 'rgba(5,150,105,0.9)' : 'rgba(217,119,6,0.9)',
+                color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700 
+              }}>
+                ĐANG ĐIỂM DANH: {scanMode === 'boarded' ? 'LÊN XE' : 'XUỐNG XE'}
+              </div>
+            )}
+
+            {!cameraActive && (
               <div style={{ 
                 width: '100%', height: '100%', 
                 display: 'flex', flexDirection: 'column', 
                 alignItems: 'center', justifyContent: 'center', 
-                color: 'var(--text-muted)', gap: '8px',
+                color: '#94a3b8', gap: '8px',
                 textAlign: 'center', padding: '16px'
               }}>
-                <Camera size={26} />
-                <div style={{ fontSize: '0.72rem' }}>{modelMsg}</div>
+                <Camera size={26} color="var(--primary-teal)" />
+                <div style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>{modelMsg}</div>
                 {modelStatus !== 'ready' ? (
                   <button 
                     onClick={initAiModels}
                     disabled={modelStatus === 'loading'}
-                    className="btn-primary"
-                    style={{ fontSize: '0.72rem', padding: '6px 12px' }}
+                    style={{ 
+                      fontSize: '0.72rem', 
+                      padding: '6px 12px',
+                      background: 'linear-gradient(135deg, var(--primary-teal), var(--accent-cyan))',
+                      border: 'none',
+                      color: '#ffffff',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: 600
+                    }}
                   >
                     {modelStatus === 'loading' ? <RefreshCw size={12} className="spin" /> : 'Kích Hoạt AI'}
                   </button>
@@ -583,8 +570,21 @@ export default function DriverTabletView({ simulations }) {
                   <button 
                     onClick={startWebcam}
                     disabled={!isTripActive}
-                    className="btn-secondary"
-                    style={{ fontSize: '0.72rem', padding: '6px 12px', opacity: isTripActive ? 1 : 0.6 }}
+                    style={{ 
+                      fontSize: '0.72rem', 
+                      padding: '6px 12px', 
+                      background: isTripActive ? 'rgba(6, 182, 212, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                      border: isTripActive ? '1px solid var(--accent-cyan)' : '1px solid rgba(255,255,255,0.1)',
+                      color: isTripActive ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.3)',
+                      borderRadius: '6px',
+                      cursor: isTripActive ? 'pointer' : 'not-allowed',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontWeight: 600,
+                      opacity: isTripActive ? 1 : 0.5,
+                      transition: 'all 0.2s ease'
+                    }}
                   >
                     Mở Camera Điểm Danh
                   </button>
@@ -594,24 +594,14 @@ export default function DriverTabletView({ simulations }) {
           </div>
 
           {/* Action buttons */}
-          {isTripActive && (
+          {isTripActive && cameraActive && (
             <div style={{ display: 'flex', gap: '8px' }}>
-              {cameraActive && (
-                <button 
-                  onClick={stopWebcam}
-                  className="btn-secondary"
-                  style={{ flex: 1, fontSize: '0.72rem', padding: '6px', justifyContent: 'center' }}
-                >
-                  Tắt Cam
-                </button>
-              )}
               <button 
-                onClick={triggerMockScan}
-                className="btn-primary"
-                style={{ flex: 2, fontSize: '0.72rem', padding: '6px', justifyContent: 'center', background: 'linear-gradient(135deg, var(--primary-teal), var(--accent-cyan))' }}
+                onClick={stopWebcam}
+                className="btn-secondary"
+                style={{ flex: 1, fontSize: '0.72rem', padding: '6px', justifyContent: 'center' }}
               >
-                <RefreshCw size={12} />
-                <span>Giả Lập Quét AI Mặt</span>
+                Tắt Camera Điểm Danh
               </button>
             </div>
           )}
@@ -620,9 +610,9 @@ export default function DriverTabletView({ simulations }) {
           <div style={{ 
             background: 'var(--bg-card-hover)', 
             border: '1px solid var(--border-card)', 
-            borderRadius: '10px', padding: '12px', 
+            borderRadius: '10px', padding: '8px', 
             flexGrow: 1, display: 'flex', flexDirection: 'column', 
-            justifyContent: 'center', minHeight: '90px' 
+            justifyContent: 'center', minHeight: '75px' 
           }}>
             {lastScanResult ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -660,10 +650,10 @@ export default function DriverTabletView({ simulations }) {
         </div>
 
         {/* 3. RIGHT COLUMN: Trip Roster & Manual Fallback */}
-        <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div className="glass-panel" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Users size={16} color="var(--accent-bus)" /> Roster & Kiểm Tra Thủ Công
+            <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Users size={15} color="var(--accent-bus)" /> Roster & Kiểm Tra Thủ Công
             </h3>
             {isTripActive && (
               <span className="badge-safe" style={{ fontSize: '0.65rem' }}>
@@ -698,7 +688,7 @@ export default function DriverTabletView({ simulations }) {
             <div style={{ 
               display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px',
               background: 'var(--bg-card-hover)', border: '1px solid var(--border-card)',
-              padding: '8px', borderRadius: '8px', fontSize: '0.68rem', textAlign: 'center'
+              padding: '5px 8px', borderRadius: '8px', fontSize: '0.68rem', textAlign: 'center'
             }}>
               <div>
                 <div style={{ color: 'var(--text-muted)' }}>Chưa Lên</div>
@@ -722,7 +712,7 @@ export default function DriverTabletView({ simulations }) {
           )}
 
           {/* Roster student list for manual fallback */}
-          <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '160px' }}>
+          <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '260px' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>
               Danh sách điểm danh:
             </div>
@@ -741,7 +731,7 @@ export default function DriverTabletView({ simulations }) {
             ) : tripRosterState ? (
               <div style={{ 
                 display: 'flex', flexDirection: 'column', gap: '6px', 
-                overflowY: 'auto', maxHeight: '180px' 
+                overflowY: 'auto', flexGrow: 1, maxHeight: '360px' 
               }}>
                 {tripRosterState.entries.map(s => {
                   let statusLabel = 'Chưa lên';
