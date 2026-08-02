@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bảng điều hành — Cảnh báo hành vi mất an toàn</title>
+<style>
+  :root {
+    --bg: #0f1420;
+    --panel: #161d2e;
+    --panel-2: #1e2740;
+    --text: #e8ecf5;
+    --muted: #8b93a7;
+    --border: #2a3350;
+    --muc0: #2ecc71;
+    --muc1: #f1c40f;
+    --muc2: #ff9f43;
+    --muc3: #ff4d4f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; color: var(--muted); }
+  .spacer { flex: 1; }
+  .badge-muc {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 14px; border-radius: 999px; font-weight: 700; font-size: 20px;
+    background: var(--panel-2); border: 2px solid var(--border);
+    transition: border-color .2s, color .2s;
+  }
+  .muc-0 { color: var(--muc0); border-color: var(--muc0); }
+  .muc-1 { color: var(--muc1); border-color: var(--muc1); }
+  .muc-2 { color: var(--muc2); border-color: var(--muc2); }
+  .muc-3 { color: var(--muc3); border-color: var(--muc3); animation: pulse 1s infinite; }
+  .muc-xam { color: #8b93a7; border-color: #555; animation: none; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+
+  .pill {
+    padding: 6px 12px; border-radius: 999px; font-size: 13px;
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
+  }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+  .dot-on { background: #2ecc71; } .dot-off { background: #555; }
+
+  #ctx-toggle {
+    cursor: pointer; font-weight: 600; padding: 8px 16px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+  }
+  #ctx-toggle.cao { background: #3a2030; border-color: #ff6b6b; color: #ff9494; }
+
+  main { padding: 20px; display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px;
+  }
+  .card h2 { margin: 0 0 12px 0; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+  #chart-wrap { position: relative; height: 220px; }
+  canvas { width: 100%; height: 100%; display: block; }
+
+  .metrics-row { display: flex; gap: 18px; margin-top: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  .metrics-row b { color: var(--text); }
+
+  #events { max-height: 560px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+  .event-item {
+    display: flex; gap: 10px; padding: 10px; border-radius: 8px; background: var(--panel-2);
+    border-left: 4px solid var(--border);
+  }
+  .event-item img { width: 84px; height: 63px; object-fit: cover; border-radius: 6px; background: #000; }
+  .event-item .info { flex: 1; font-size: 13px; }
+  .event-item .info .top { display: flex; justify-content: space-between; color: var(--muted); }
+  .event-item .info .chi-so { margin-top: 4px; }
+  .event-muc-0 { border-left-color: var(--muc0); }
+  .event-muc-1 { border-left-color: var(--muc1); }
+  .event-muc-2 { border-left-color: var(--muc2); }
+  .event-muc-3 { border-left-color: var(--muc3); }
+  .event-item.dac-biet { border-left-color: #9b59b6; }
+  .tag-dac-biet { color: #c58bf0; font-weight: 600; }
+
+  footer { padding: 10px 20px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>BẢNG ĐIỀU HÀNH — CẢNH BÁO HÀNH VI MẤT AN TOÀN (demo)</h1>
+  <div class="spacer"></div>
+  <span class="pill"><span id="sse-dot" class="dot dot-off"></span><span id="sse-text">đang kết nối...</span></span>
+  <span class="pill">Nguồn tín hiệu: <b id="m-nguon">—</b></span>
+  <span class="pill">Profile: <b id="m-profile">mặc định</b></span>
+  <span class="pill">Coverage: <b id="m-coverage">—</b></span>
+  <span class="pill">Độ trễ Lớp 1 gần nhất: <b id="latency">—</b></span>
+  <button id="ctx-toggle">Mức rủi ro nền: <span id="ctx-label">…</span></button>
+  <div id="muc-badge" class="badge-muc muc-0">Mức <span id="muc-value">0</span></div>
+</header>
+
+<main>
+  <div class="card">
+    <h2>PERCLOS theo thời gian (cửa sổ 60s)</h2>
+    <div id="chart-wrap"><canvas id="chart"></canvas></div>
+    <div class="metrics-row">
+      <div>PERCLOS: <b id="m-perclos">—</b></div>
+      <div>Ngáp/phút: <b id="m-ngap">—</b></div>
+      <div>Gật/phút: <b id="m-gat">—</b></div>
+      <div>EAR: <b id="m-ear">—</b></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Sự kiện gần đây (mức ≥ 2, kèm ảnh minh chứng)</h2>
+    <div id="events"><div class="pill">Chưa có sự kiện nào.</div></div>
+  </div>
+</main>
+
+<footer>Chỉ báo tham khảo về hành vi mất an toàn — không phải chẩn đoán y tế. Dữ liệu xử lý tại edge, server chỉ lưu sự kiện.</footer>
+
+<script>
+const MUC_COLOR = { 0: "#2ecc71", 1: "#f1c40f", 2: "#ff9f43", 3: "#ff4d4f" };
+let telemetryPoints = []; // {ts, perclos}
+const MAX_POINTS = 200;
+
+function fmt(n, digits = 2) {
+  return (n === null || n === undefined || Number.isNaN(n)) ? "—" : Number(n).toFixed(digits);
+}
+
+function setMucBadge(muc) {
+  const el = document.getElementById("muc-badge");
+  el.className = "badge-muc muc-" + muc;
+  document.getElementById("muc-value").textContent = muc;
+}
+
+function setCtxLabel(muc) {
+  const btn = document.getElementById("ctx-toggle");
+  document.getElementById("ctx-label").textContent = muc;
+  btn.className = muc === "cao" ? "cao" : "";
+}
+
+function pushTelemetry(t) {
+  telemetryPoints.push(t);
+  if (telemetryPoints.length > MAX_POINTS) telemetryPoints.shift();
+  document.getElementById("m-perclos").textContent = fmt(t.perclos);
+  document.getElementById("m-ngap").textContent = fmt(t.ngap_phut);
+  document.getElementById("m-gat").textContent = fmt(t.gat_phut);
+  document.getElementById("m-ear").textContent = fmt(t.ear, 3);
+  if (t.layer1_latency_ms !== null && t.layer1_latency_ms !== undefined) {
+    document.getElementById("latency").textContent = fmt(t.layer1_latency_ms, 1) + " ms";
+  }
+  if (t.nguon_tin_hieu) document.getElementById("m-nguon").textContent = t.nguon_tin_hieu;
+  document.getElementById("m-profile").textContent = t.profile || "mặc định";
+  if (t.coverage !== null && t.coverage !== undefined) {
+    document.getElementById("m-coverage").textContent = (t.coverage * 100).toFixed(0) + "%";
+  }
+
+  if (t.kha_dung === false) {
+    const el = document.getElementById("muc-badge");
+    el.className = "badge-muc muc-xam";
+    document.getElementById("muc-value").textContent = "—";
+  } else {
+    setMucBadge(t.muc);
+  }
+  drawChart();
+}
+
+function drawChart() {
+  const canvas = document.getElementById("chart");
+  const wrap = document.getElementById("chart-wrap");
+  const dpr = window.devicePixelRatio || 1;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const padL = 34, padB = 20, padT = 10, padR = 10;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+
+  // gridlines + y labels (0, 0.28, 0.35, 1)
+  ctx.strokeStyle = "#2a3350"; ctx.fillStyle = "#8b93a7"; ctx.font = "11px sans-serif";
+  [0, 0.25, 0.5, 0.75, 1].forEach(v => {
+    const y = padT + plotH * (1 - v);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+    ctx.fillText(v.toFixed(2), 2, y + 4);
+  });
+
+  if (telemetryPoints.length < 2) return;
+  const tMin = telemetryPoints[0].ts, tMax = telemetryPoints[telemetryPoints.length - 1].ts;
+  const tSpan = Math.max(1, tMax - tMin);
+
+  ctx.strokeStyle = "#5aa9ff"; ctx.lineWidth = 2; ctx.beginPath();
+  telemetryPoints.forEach((p, i) => {
+    const x = padL + plotW * ((p.ts - tMin) / tSpan);
+    const y = padT + plotH * (1 - Math.min(1, p.perclos || 0));
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+}
+
+function renderEvent(ev) {
+  const list = document.getElementById("events");
+  if (list.children.length === 1 && list.children[0].classList.contains("pill")) list.innerHTML = "";
+
+  const dacBiet = ev.loai && ev.loai !== "canh_bao_hanh_vi";
+  const div = document.createElement("div");
+  div.className = "event-item event-muc-" + ev.muc + (dacBiet ? " dac-biet" : "");
+  const time = new Date(ev.ts * 1000).toLocaleTimeString();
+  const chiSo = ev.chi_so || {};
+  const nhan = dacBiet
+    ? `<span class="tag-dac-biet">MAT MAT SAU CHUI DAU</span>`
+    : `<span>Mức ${ev.muc}</span>`;
+  div.innerHTML = `
+    ${ev.co_anh ? `<img src="/api/events/${ev.id}/image" loading="lazy" />` : ""}
+    <div class="info">
+      <div class="top">${nhan}<span>${time}</span></div>
+      <div class="chi-so">${dacBiet
+        ? `pitch trước khi mất: ${fmt(chiSo.pitch_truoc_khi_mat, 1)}°`
+        : `PERCLOS ${fmt(chiSo.perclos)} · Ngáp/phút ${fmt(chiSo.ngap_phut)} · Gật/phút ${fmt(chiSo.gat_phut)} · EAR ${fmt(chiSo.ear, 3)}`}</div>
+    </div>`;
+  list.prepend(div);
+  while (list.children.length > 50) list.removeChild(list.lastChild);
+}
+
+async function taiDuLieuBanDau() {
+  try {
+    const ctx = await (await fetch("/api/context")).json();
+    setCtxLabel(ctx.muc);
+  } catch (e) {}
+  try {
+    const telemetry = await (await fetch("/api/telemetry?limit=200")).json();
+    telemetry.forEach(pushTelemetry);
+  } catch (e) {}
+  try {
+    const events = await (await fetch("/api/events?limit=30")).json();
+    events.reverse().forEach(renderEvent);
+  } catch (e) {}
+}
+
+function ketNoiSSE() {
+  const es = new EventSource("/api/stream");
+  es.onopen = () => {
+    document.getElementById("sse-dot").className = "dot dot-on";
+    document.getElementById("sse-text").textContent = "đã kết nối";
+  };
+  es.onerror = () => {
+    document.getElementById("sse-dot").className = "dot dot-off";
+    document.getElementById("sse-text").textContent = "mất kết nối, đang thử lại...";
+  };
+  es.onmessage = (msg) => {
+    const data = JSON.parse(msg.data);
+    if (data.type === "telemetry") pushTelemetry(data);
+    else if (data.type === "event") renderEvent(data);
+    else if (data.type === "context") setCtxLabel(data.muc);
+  };
+}
+
+document.getElementById("ctx-toggle").addEventListener("click", async () => {
+  const cur = document.getElementById("ctx-label").textContent;
+  const next = cur === "cao" ? "binh_thuong" : "cao";
+  await fetch("/api/context", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ muc: next }),
+  });
+  setCtxLabel(next);
+});
+
+window.addEventListener("resize", drawChart);
+
+taiDuLieuBanDau();
+ketNoiSSE();
+</script>
+</body>
+</html>
