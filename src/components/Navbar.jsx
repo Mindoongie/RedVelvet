@@ -14,9 +14,9 @@ import {
 // Simulation toggle buttons chỉ dành cho Admin (demo tổng quan).
 // Driver & Parent nhận cảnh báo AI tự động trong view riêng của họ.
 const SIM_ROLES = {
-  drowsiness: ['admin'],
+  drowsiness: ['admin', 'driver'],
   leftBehind:  ['admin'],
-  routeDev:    ['admin'],
+  routeDev:    ['admin', 'driver'],
 };
 
 export default function Navbar({ 
@@ -29,12 +29,21 @@ export default function Navbar({
   openSosModal
 }) {
   const [time, setTime] = React.useState(new Date().toLocaleTimeString('vi-VN'));
+  const [contextLevel, setContextLevel] = React.useState(localStorage.getItem('safebus_context_level') || 'binh_thuong');
 
   React.useEffect(() => {
     const timer = setInterval(() => {
       setTime(new Date().toLocaleTimeString('vi-VN'));
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  React.useEffect(() => {
+    const handleStorageChange = () => {
+      setContextLevel(localStorage.getItem('safebus_context_level') || 'binh_thuong');
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   // Guard: currentUser chưa sẵn sàng (có thể xảy ra trong HMR)
@@ -124,6 +133,30 @@ export default function Navbar({
                     <MapPin size={12} /> Lệch Tuyến
                   </button>
                 )}
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderLeft: '1px solid var(--border-card)', paddingLeft: '6px', marginLeft: '2px' }}>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 700 }}>Bối Cảnh Lớp 3:</span>
+                  <select 
+                    value={contextLevel} 
+                    onChange={(e) => {
+                      localStorage.setItem('safebus_context_level', e.target.value);
+                      window.dispatchEvent(new Event('storage'));
+                    }}
+                    style={{ 
+                      padding: '2px 4px', 
+                      borderRadius: '4px', 
+                      border: '1px solid var(--border-card)', 
+                      background: 'var(--bg-card)', 
+                      color: 'var(--text-main)', 
+                      fontSize: '0.62rem', 
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="binh_thuong">Bình Thường (EAR &lt; 0.21 nhắm 1.2s)</option>
+                    <option value="cao">Rủi Ro Cao (EAR &lt; 0.21 nhắm 0.8s)</option>
+                  </select>
+                </div>
               </div>
             );
           })()}

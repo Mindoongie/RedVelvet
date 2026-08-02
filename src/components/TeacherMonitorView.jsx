@@ -83,7 +83,7 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(239,68,68,0.2)', border: '1px solid #ef4444', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', color: '#f87171' }}>
               <Bell size={14} />
               <span>
-                {simulations.drowsiness && 'Tài xế mệt · '}
+                {simulations.drowsiness && 'Tài xế ngủ gật (Cấp 2) · '}
                 {simulations.leftBehind && 'HS bỏ quên · '}
                 {simulations.routeDev && 'Xe lệch tuyến'}
               </span>

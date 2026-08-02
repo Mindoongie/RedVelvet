@@ -4,6 +4,8 @@ import { Camera, Video, AlertCircle, RefreshCw } from 'lucide-react';
 export default function CameraAiOverlay({ 
   mode = 'driver', // 'driver' | 'attendance'
   isDrowsy = false, 
+  ear = 0.28,
+  mar = 0.12,
   onStudentRecognized
 }) {
   const videoRef = React.useRef(null);
@@ -149,7 +151,7 @@ export default function CameraAiOverlay({
                   fontFamily: 'var(--font-mono)',
                   whiteSpace: 'nowrap'
                 }}>
-                  {isDrowsy ? 'EAR: 0.16 (NHẮM MẮT!)' : 'EAR: 0.28 (TỈNH TÁO)'}
+                  {isDrowsy ? `EAR: ${ear.toFixed(2)} (NHẮM MẮT!)` : `EAR: ${ear.toFixed(2)} | MAR: ${mar.toFixed(2)}`}
                 </div>
               </div>
             </div>

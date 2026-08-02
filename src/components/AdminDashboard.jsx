@@ -4,7 +4,7 @@ import LiveMapSimulator from './LiveMapSimulator';
 
 export default function AdminDashboard({ simulations }) {
   const fleetData = [
-    { id: 'BUS-01', route: 'Tuyến 1: Quận 2 - Bình Thạnh - Q1', driver: 'Nguyễn Văn Hùng', teacher: 'Trần Thị Thu', students: '24 / 24', ear: '0.28 (Bình thường)', mar: '0.12', status: simulations.drowsiness ? 'warning' : 'safe' },
+    { id: 'BUS-01', route: 'Tuyến 1: Quận 2 - Bình Thạnh - Q1', driver: 'Nguyễn Văn Hùng', teacher: 'Trần Thị Thu', students: '24 / 24', ear: simulations.drowsiness ? '0.14 (MỆT MỎI CẤP 3!)' : '0.28 (Tỉnh táo)', mar: simulations.drowsiness ? '0.65' : '0.12', status: simulations.drowsiness ? 'warning' : 'safe' },
     { id: 'BUS-02', route: 'Tuyến 2: Quận 7 - Nhà Bè', driver: 'Lê Hoàng Nam', teacher: 'Phạm Minh Trang', students: '22 / 22', ear: '0.29', mar: '0.10', status: 'safe' },
     { id: 'BUS-03', route: 'Tuyến 3: Thủ Đức - Q9', driver: 'Trịnh Quốc Bảo', teacher: 'Lê Thị Mai', students: '28 / 28', ear: '0.27', mar: '0.15', status: simulations.routeDev ? 'danger' : 'safe' },
     { id: 'BUS-04', route: 'Tuyến 4: Tân Bình - Phú Nhuận', driver: 'Vũ Đức Cường', teacher: 'Nguyễn Thanh Hà', students: '20 / 20', ear: '0.26', mar: '0.11', status: 'safe' },
@@ -23,9 +23,9 @@ export default function AdminDashboard({ simulations }) {
                 CẢNH BÁO AI REAL-TIME TỪ ĐỘI XE!
               </h3>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-main)' }}>
-                {simulations.drowsiness && '• BUS-01: Phát hiện tài xế nhắm mắt > 2.5s (EAR < 0.20) | '}
+                {simulations.drowsiness && '• BUS-01: Phát hiện tài xế nhắm mắt quá hạn (Hysteresis EAR < 0.21) | '}
                 {simulations.leftBehind && '• BUS-01: Phát hiện 1 học sinh chưa quét khuôn mặt xuống trạm | '}
-                {simulations.routeDev && '• BUS-03: Xe chệch khỏi đường chuẩn Haversine > 280m'}
+                {simulations.routeDev && '• BUS-03: Xe chệch khỏi đường chuẩn Haversine > 100m'}
               </p>
             </div>
           </div>

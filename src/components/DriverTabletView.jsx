@@ -15,15 +15,100 @@ import {
   loadFaceModels
 } from '../utils/faceEngine';
 
-// ─── Hằng số chu kỳ AI tự động ngủ gật của tài xế ────────────────────────────
-const AI_CYCLE_DELAY_MS  = 8000;
-const AI_ALERT_DURATION  = 6000;
-const AI_CYCLE_PERIOD_MS = 22000;
+import { DrowsinessDetector } from '../utils/drowsinessEngine';
 
 export default function DriverTabletView({ simulations }) {
   const [audioEnabled, setAudioEnabled] = useState(true);
-  const [aiDrowsy, setAiDrowsy] = useState(false);
-  const isDrowsy = aiDrowsy || simulations.drowsiness;
+  
+  // Drowsiness Engine setup
+  const detectorRef = useRef(new DrowsinessDetector());
+  const [drowsinessState, setDrowsinessState] = useState({
+    isClosed: false,
+    isL1Triggered: false,
+    perclos: 0.0,
+    yawnsPerMin: 0.0,
+    nodsPerMin: 0.0,
+    riskScore: 0.12,
+    alertLevel: 0,
+    ear: 0.28,
+    mar: 0.10,
+    pitch: 0
+  });
+
+  const [contextLevel, setContextLevel] = useState(localStorage.getItem('safebus_context_level') || 'binh_thuong');
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setContextLevel(localStorage.getItem('safebus_context_level') || 'binh_thuong');
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Run periodic Drowsiness check via the DrowsinessEngine
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Determine simulated EAR, MAR, Pitch based on simulation state
+      let earInput = 0.28;
+      let marInput = 0.10;
+      let pitchInput = 0;
+
+      if (simulations.drowsiness) {
+        // Driver is simulated as drowsy: cycle between eyes closed, yawns and head nods
+        const timeFactor = Date.now() % 15000;
+        if (timeFactor < 5000) {
+          // Yawning phase
+          earInput = 0.25;
+          marInput = 0.65;
+          pitchInput = 5;
+        } else if (timeFactor < 10000) {
+          // Closed eyes (nhắm mắt)
+          earInput = 0.14;
+          marInput = 0.10;
+          pitchInput = 10;
+        } else {
+          // Head nodding (gật đầu)
+          earInput = 0.22;
+          marInput = 0.15;
+          pitchInput = 25;
+        }
+      } else {
+        // Normal blinking
+        const blinkFactor = Date.now() % 4000;
+        if (blinkFactor < 200) {
+          earInput = 0.12; // normal blink
+        } else {
+          earInput = 0.28 + Math.random() * 0.02;
+        }
+        marInput = 0.10 + Math.random() * 0.04;
+        pitchInput = (Math.random() - 0.5) * 4;
+      }
+
+      const res = detectorRef.current.processFrame(earInput, marInput, pitchInput, contextLevel);
+
+      setDrowsinessState({
+        isClosed: res.isClosed,
+        isL1Triggered: res.isL1Triggered,
+        perclos: res.perclos,
+        yawnsPerMin: res.yawnsPerMin,
+        nodsPerMin: res.nodsPerMin,
+        riskScore: res.riskScore,
+        alertLevel: res.alertLevel,
+        ear: earInput,
+        mar: marInput,
+        pitch: pitchInput
+      });
+
+      // Play beep sound if Layer 1 reflex triggers
+      if (res.isL1Triggered && audioEnabled) {
+        playBeepAlert();
+      }
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, [simulations.drowsiness, audioEnabled, contextLevel]);
+
+  const isDrowsy = drowsinessState.alertLevel >= 2;
 
   // ─── Trạng thái Chuyến xe & Điểm danh ──────────────────────────────────────
   const [isTripActive, setIsTripActive] = useState(false);
@@ -53,30 +138,6 @@ export default function DriverTabletView({ simulations }) {
       setTripRosterState(rosterSummary(current));
     }
   }, []);
-
-  // ─── Chu kỳ tự động cảnh báo ngủ gật tài xế ────────────────────────────────
-  useEffect(() => {
-    const runCycle = () => {
-      const onTimer  = setTimeout(() => setAiDrowsy(true),  AI_CYCLE_DELAY_MS);
-      const offTimer = setTimeout(() => setAiDrowsy(false), AI_CYCLE_DELAY_MS + AI_ALERT_DURATION);
-      return [onTimer, offTimer];
-    };
-
-    const [on1, off1] = runCycle();
-    const interval = setInterval(() => runCycle(), AI_CYCLE_PERIOD_MS);
-    return () => {
-      clearTimeout(on1);
-      clearTimeout(off1);
-      clearInterval(interval);
-    };
-  }, []);
-
-  // Âm thanh báo hiệu buồn ngủ
-  useEffect(() => {
-    if (isDrowsy && audioEnabled) {
-      playBeepAlert();
-    }
-  }, [isDrowsy]);
 
   const playBeepAlert = () => {
     try {
@@ -325,9 +386,9 @@ export default function DriverTabletView({ simulations }) {
   }, []);
 
   // Biometrics
-  const earValue   = isDrowsy ? 0.16 : 0.28;
-  const marValue   = isDrowsy ? 0.65 : 0.12;
-  const riskScore  = isDrowsy ? 88   : 12;
+  const earValue   = drowsinessState.ear;
+  const marValue   = drowsinessState.mar;
+  const riskScore  = Math.round(drowsinessState.riskScore * 100);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px' }}>
@@ -384,9 +445,9 @@ export default function DriverTabletView({ simulations }) {
         }}>
           <AlertTriangle size={32} />
           <div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 900 }}>AI PHÁT HIỆN DẤU HIỆU BUỒN NGỦ!</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 900 }}>AI PHÁT HIỆN DẤU HIỆU BUỒN NGỦ (CẤP {drowsinessState.alertLevel})!</div>
             <div style={{ fontSize: '0.9rem', marginTop: '4px', opacity: 0.9 }}>
-              EAR = {earValue} (Ngưỡng cảnh báo &lt; 0.20) · Vui lòng tập trung lái xe an toàn!
+              EAR = {earValue.toFixed(2)} | PERCLOS = {(drowsinessState.perclos * 100).toFixed(1)}% | Bối cảnh Lớp 3: {contextLevel === 'cao' ? 'RỦI RO CAO' : 'BÌNH THƯỜNG'}
             </div>
           </div>
         </div>
@@ -402,19 +463,21 @@ export default function DriverTabletView({ simulations }) {
               <Eye size={16} color="var(--accent-cyan)" /> Giám Sát Tài Xế
             </h3>
             <span className={isDrowsy ? 'badge-danger' : 'badge-safe'} style={{ fontSize: '0.65rem' }}>
-              {isDrowsy ? 'CẢNH BÁO MỆT MỎI' : 'TỈNH TÁO'}
+              {isDrowsy ? `MỆT MỎI CẤP ${drowsinessState.alertLevel}` : 'TỈNH TÁO'}
             </span>
           </div>
 
           <div style={{ height: '210px' }}>
-            <CameraAiOverlay mode="driver" isDrowsy={isDrowsy} />
+            <CameraAiOverlay mode="driver" isDrowsy={isDrowsy} ear={earValue} mar={marValue} />
           </div>
 
           {/* Indices */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {[
-              { label: 'EAR (Chỉ số mở mắt)', value: earValue, bad: earValue < 0.20, note: 'Chuẩn ≥ 0.20' },
-              { label: 'MAR (Chỉ số ngáp)', value: marValue, bad: marValue > 0.50, note: 'Chuẩn < 0.50' },
+              { label: 'EAR (Chỉ số mở mắt)', value: earValue.toFixed(2), bad: earValue < 0.20, note: 'Chuẩn ≥ 0.20 (Vùng chết: 0.19-0.23)' },
+              { label: 'MAR (Chỉ số ngáp)', value: marValue.toFixed(2), bad: marValue > 0.55, note: 'Chuẩn < 0.55' },
+              { label: 'PERCLOS (Tỉ lệ nhắm mắt)', value: `${(drowsinessState.perclos * 100).toFixed(1)}%`, bad: drowsinessState.perclos >= 0.35, note: 'Cửa sổ trượt 60s' },
+              { label: 'Ngáp & Gật đầu', value: `${drowsinessState.yawnsPerMin.toFixed(1)} ypm / ${drowsinessState.nodsPerMin.toFixed(1)} npm`, bad: drowsinessState.yawnsPerMin > 1.0 || drowsinessState.nodsPerMin > 1.0, note: 'Cửa sổ trượt 3p' },
               { label: 'Risk Score (Độ rủi ro)', value: `${riskScore}%`, bad: riskScore > 50, note: 'Noisy-OR Fusion' },
             ].map(m => (
               <div key={m.label} style={{ 
