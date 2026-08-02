@@ -437,15 +437,15 @@ export default function DriverTabletView({ simulations }) {
       )}
 
       {/* ── MAIN COCKPIT VIEW AREA ─────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr 1.2fr', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
 
         {/* 1. LEFT COLUMN: Driver Fatigue Safety (Inferensys AI) */}
-        <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div className="glass-panel" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Eye size={16} color="var(--accent-cyan)" /> Giám Sát Tài Xế
+            <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Eye size={15} color="var(--accent-cyan)" /> Giám Sát Tài Xế
             </h3>
-            <span className={isDrowsy ? 'badge-danger' : 'badge-safe'} style={{ fontSize: '0.65rem' }}>
+            <span className={isDrowsy ? 'badge-danger' : 'badge-safe'} style={{ fontSize: '0.62rem' }}>
               {isDrowsy ? `MỆT MỎI CẤP ${drowsinessState.alertLevel}` : 'TỈNH TÁO'}
             </span>
           </div>
@@ -463,7 +463,7 @@ export default function DriverTabletView({ simulations }) {
           </div>
 
           {/* Indices */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
             {[
               { label: 'EAR (Chỉ số mở mắt)', value: earValue.toFixed(2), bad: earValue < 0.20, note: 'Chuẩn ≥ 0.20 (Vùng chết: 0.19-0.23)' },
               { label: 'MAR (Chỉ số ngáp)', value: marValue.toFixed(2), bad: marValue > 0.55, note: 'Chuẩn < 0.55' },
@@ -473,13 +473,13 @@ export default function DriverTabletView({ simulations }) {
             ].map(m => (
               <div key={m.label} style={{ 
                 background: 'var(--bg-card-hover)', 
-                padding: '10px 12px', 
-                borderRadius: '8px', 
+                padding: '6px 10px', 
+                borderRadius: '6px', 
                 border: '1px solid var(--border-card)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                fontSize: '0.72rem'
+                fontSize: '0.68rem'
               }}>
                 <div>
                   <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{m.label}</div>
@@ -499,7 +499,7 @@ export default function DriverTabletView({ simulations }) {
         </div>
 
         {/* 2. MIDDLE COLUMN: Student Face Scan Camera (1 Camera) */}
-        <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div className="glass-panel" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Camera size={16} color="var(--primary-teal)" /> AI Attendance Stream
@@ -635,9 +635,9 @@ export default function DriverTabletView({ simulations }) {
           <div style={{ 
             background: 'var(--bg-card-hover)', 
             border: '1px solid var(--border-card)', 
-            borderRadius: '10px', padding: '12px', 
+            borderRadius: '10px', padding: '8px', 
             flexGrow: 1, display: 'flex', flexDirection: 'column', 
-            justifyContent: 'center', minHeight: '90px' 
+            justifyContent: 'center', minHeight: '75px' 
           }}>
             {lastScanResult ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -675,10 +675,10 @@ export default function DriverTabletView({ simulations }) {
         </div>
 
         {/* 3. RIGHT COLUMN: Trip Roster & Manual Fallback */}
-        <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div className="glass-panel" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Users size={16} color="var(--accent-bus)" /> Roster & Kiểm Tra Thủ Công
+            <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Users size={15} color="var(--accent-bus)" /> Roster & Kiểm Tra Thủ Công
             </h3>
             {isTripActive && (
               <span className="badge-safe" style={{ fontSize: '0.65rem' }}>
@@ -713,7 +713,7 @@ export default function DriverTabletView({ simulations }) {
             <div style={{ 
               display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px',
               background: 'var(--bg-card-hover)', border: '1px solid var(--border-card)',
-              padding: '8px', borderRadius: '8px', fontSize: '0.68rem', textAlign: 'center'
+              padding: '5px 8px', borderRadius: '8px', fontSize: '0.68rem', textAlign: 'center'
             }}>
               <div>
                 <div style={{ color: 'var(--text-muted)' }}>Chưa Lên</div>
@@ -737,7 +737,7 @@ export default function DriverTabletView({ simulations }) {
           )}
 
           {/* Roster student list for manual fallback */}
-          <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '160px' }}>
+          <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '260px' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>
               Danh sách điểm danh:
             </div>
@@ -756,7 +756,7 @@ export default function DriverTabletView({ simulations }) {
             ) : tripRosterState ? (
               <div style={{ 
                 display: 'flex', flexDirection: 'column', gap: '6px', 
-                overflowY: 'auto', maxHeight: '260px' 
+                overflowY: 'auto', flexGrow: 1, maxHeight: '360px' 
               }}>
                 {tripRosterState.entries.map(s => {
                   let statusLabel = 'Chưa lên';

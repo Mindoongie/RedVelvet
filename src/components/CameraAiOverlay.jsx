@@ -202,7 +202,7 @@ export default function CameraAiOverlay({
   }, []);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '280px', background: '#050a17', borderRadius: '14px', overflow: 'hidden', border: isDrowsy ? '2px solid #ef4444' : '1px solid var(--border-card)' }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '210px', background: '#050a17', borderRadius: '14px', overflow: 'hidden', border: isDrowsy ? '2px solid #ef4444' : '1px solid var(--border-card)' }}>
       {/* Top Overlay Header controls */}
       <div style={{ position: 'absolute', top: 10, left: 10, right: 10, zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="badge-ai" style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)' }}>
