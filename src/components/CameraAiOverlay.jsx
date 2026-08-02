@@ -97,33 +97,6 @@ export default function CameraAiOverlay({
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (result) {
-              // Draw real landmarks & bounding box
-              const resized = faceapi.resizeResults(result, dims);
-              const boxColor = isDrowsy ? '#ef4444' : '#06b6d4';
-              const { x, y, width, height } = resized.detection.box;
-
-              // Draw Face Reticle Box
-              ctx.strokeStyle = boxColor;
-              ctx.lineWidth = 2;
-              ctx.strokeRect(x, y, width, height);
-
-              // Draw eye landmarks (dots 36 to 47)
-              const landmarks = resized.landmarks.positions;
-              ctx.fillStyle = isDrowsy ? '#ef4444' : '#10b981';
-              for (let i = 36; i < 48; i++) {
-                ctx.beginPath();
-                ctx.arc(landmarks[i].x, landmarks[i].y, 2, 0, 2 * Math.PI);
-                ctx.fill();
-              }
-
-              // Draw inner mouth landmarks (dots 60 to 67)
-              ctx.fillStyle = '#f59e0b';
-              for (let i = 60; i < 68; i++) {
-                ctx.beginPath();
-                ctx.arc(landmarks[i].x, landmarks[i].y, 2, 0, 2 * Math.PI);
-                ctx.fill();
-              }
-
               // Calculate actual EAR, MAR, Pitch from RAW un-resized positions
               const rawLandmarks = result.landmarks.positions;
               const computedEar = calculateEAR(rawLandmarks);
@@ -203,33 +176,32 @@ export default function CameraAiOverlay({
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '210px', background: '#050a17', borderRadius: '14px', overflow: 'hidden', border: isDrowsy ? '2px solid #ef4444' : '1px solid var(--border-card)' }}>
-      {/* Top Overlay Header controls */}
-      <div style={{ position: 'absolute', top: 10, left: 10, right: 10, zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="badge-ai" style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)' }}>
-          <Camera size={14} color="var(--accent-cyan)" />
-          <span>{mode === 'driver' ? 'AI Driver Eye/Face Camera (Inferensys)' : 'Face Recognition Stream (face-api.js)'}</span>
-        </div>
-
-        <button 
-          onClick={useWebcam ? stopWebcam : startWebcam}
-          style={{
-            background: useWebcam ? 'rgba(239, 68, 68, 0.2)' : 'rgba(6, 182, 212, 0.2)',
-            border: useWebcam ? '1px solid #ef4444' : '1px solid var(--accent-cyan)',
-            color: useWebcam ? '#f87171' : '#38bdf8',
-            borderRadius: '6px',
-            padding: '4px 10px',
-            fontSize: '0.7rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            pointerEvents: 'auto'
-          }}
-        >
-          {useWebcam ? <RefreshCw size={12} /> : <Video size={12} />}
-          {useWebcam ? 'Tắt Webcam Live' : 'Mở Webcam Live'}
-        </button>
-      </div>
+      {/* Top absolute camera button (Clean view overlay) */}
+      <button 
+        onClick={useWebcam ? stopWebcam : startWebcam}
+        style={{
+          position: 'absolute',
+          top: 10,
+          right: 10,
+          zIndex: 10,
+          background: useWebcam ? 'rgba(239, 68, 68, 0.85)' : 'rgba(6, 182, 212, 0.85)',
+          border: useWebcam ? '1px solid #ef4444' : '1px solid var(--accent-cyan)',
+          color: '#ffffff',
+          borderRadius: '6px',
+          padding: '5px 12px',
+          fontSize: '0.72rem',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          pointerEvents: 'auto',
+          fontWeight: 600,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.5)'
+        }}
+      >
+        {useWebcam ? <RefreshCw size={12} /> : <Video size={12} />}
+        {useWebcam ? 'Tắt Webcam Live' : 'Mở Webcam Live'}
+      </button>
 
       {/* Layer 1: Live Video or Synthetic Backdrop */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
@@ -249,17 +221,24 @@ export default function CameraAiOverlay({
           <div style={{
             width: '100%',
             height: '100%',
-            background: mode === 'driver' ? 'radial-gradient(circle, #1e293b 0%, #090d1a 100%)' : 'radial-gradient(circle, #0f172a 0%, #040711 100%)'
-          }} />
+            background: mode === 'driver' ? 'radial-gradient(circle, #1e293b 0%, #090d1a 100%)' : 'radial-gradient(circle, #0f172a 0%, #040711 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'rgba(255,255,255,0.4)',
+            fontSize: '0.8rem',
+            fontWeight: 500,
+            flexDirection: 'column',
+            gap: '8px'
+          }}>
+            <Camera size={28} color="rgba(255,255,255,0.2)" />
+            <span>Camera giám sát tài xế đang tắt</span>
+          </div>
         )}
       </div>
 
-      {/* Layer 2: HUD Computer Vision Overlays & Canvas */}
-      <div style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {/* Dynamic scan line effect */}
-        <div className="scan-line" style={{ zIndex: 3 }} />
-
-        {/* Real-time landmark canvas overlay */}
+      {/* Layer 2: Transparent canvas for dimensions and error notices */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none' }}>
         <canvas 
           ref={canvasRef} 
           style={{ 
@@ -272,120 +251,6 @@ export default function CameraAiOverlay({
             zIndex: 4
           }} 
         />
-
-        {/* AI HUD Status indicator */}
-        <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: '6px', alignItems: 'center', zIndex: 5 }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: isDrowsy ? '#ef4444' : '#10b981', animation: 'pulse 1s infinite' }} />
-          <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.7)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
-            AI ENGINE ACTIVE
-          </span>
-        </div>
-
-        {/* HUD grid corners */}
-        <div style={{ position: 'absolute', top: 12, left: 12, width: 8, height: 8, borderTop: '2px solid rgba(255,255,255,0.4)', borderLeft: '2px solid rgba(255,255,255,0.4)', zIndex: 5 }} />
-        <div style={{ position: 'absolute', top: 12, right: 12, width: 8, height: 8, borderTop: '2px solid rgba(255,255,255,0.4)', borderRight: '2px solid rgba(255,255,255,0.4)', zIndex: 5 }} />
-        <div style={{ position: 'absolute', bottom: 12, left: 12, width: 8, height: 8, borderBottom: '2px solid rgba(255,255,255,0.4)', borderLeft: '2px solid rgba(255,255,255,0.4)', zIndex: 5 }} />
-        <div style={{ position: 'absolute', bottom: 12, right: 12, width: 8, height: 8, borderBottom: '2px solid rgba(255,255,255,0.4)', borderRight: '2px solid rgba(255,255,255,0.4)', zIndex: 5 }} />
-
-        {/* Driver Drowsiness fatigue scanner box (Only visible in simulation mode, hidden when live webcam is active) */}
-        {mode === 'driver' && !useWebcam && (
-          <div style={{ position: 'relative', width: '220px', height: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
-            <div style={{
-              position: 'absolute',
-              width: '180px',
-              height: '200px',
-              border: isDrowsy ? '2px dashed #ef4444' : '2px dashed #06b6d4',
-              borderRadius: '16px',
-              boxShadow: isDrowsy ? '0 0 20px rgba(239, 68, 68, 0.4)' : '0 0 15px rgba(6, 182, 212, 0.2)',
-              background: isDrowsy ? 'rgba(239, 68, 68, 0.05)' : 'rgba(6, 182, 212, 0.03)',
-              transition: 'all 0.3s ease'
-            }}>
-              {/* Corner reticles */}
-              <div style={{ position: 'absolute', top: -4, left: -4, width: 12, height: 12, borderTop: '3px solid #38bdf8', borderLeft: '3px solid #38bdf8' }} />
-              <div style={{ position: 'absolute', top: -4, right: -4, width: 12, height: 12, borderTop: '3px solid #38bdf8', borderRight: '3px solid #38bdf8' }} />
-              <div style={{ position: 'absolute', bottom: -4, left: -4, width: 12, height: 12, borderBottom: '3px solid #38bdf8', borderLeft: '3px solid #38bdf8' }} />
-              <div style={{ position: 'absolute', bottom: -4, right: -4, width: 12, height: 12, borderBottom: '3px solid #38bdf8', borderRight: '3px solid #38bdf8' }} />
-
-              {/* Eyes Landmark Points Simulation */}
-              <div style={{ position: 'absolute', top: '75px', left: '40px', display: 'flex', gap: '50px' }}>
-                <div style={{
-                  width: 24, height: isDrowsy ? 2 : 12, 
-                  borderRadius: isDrowsy ? 0 : '50%',
-                  background: isDrowsy ? '#ef4444' : '#06b6d4',
-                  border: '1px solid #ffffff'
-                }} />
-                <div style={{
-                  width: 24, height: isDrowsy ? 2 : 12, 
-                  borderRadius: isDrowsy ? 0 : '50%',
-                  background: isDrowsy ? '#ef4444' : '#06b6d4',
-                  border: '1px solid #ffffff'
-                }} />
-              </div>
-
-              {/* Mouth Point (MAR Yawn Detector) */}
-              <div style={{
-                position: 'absolute',
-                top: '130px',
-                left: '65px',
-                width: 50,
-                height: isDrowsy ? 24 : 10,
-                borderRadius: '12px',
-                border: '1px solid #f59e0b',
-                background: isDrowsy ? 'rgba(245, 158, 11, 0.3)' : 'transparent'
-              }} />
-            </div>
-          </div>
-        )}
-
-        {/* Global Drowsiness Stats Badge (Always visible at the bottom of the view) */}
-        {mode === 'driver' && (
-          <div style={{
-            position: 'absolute',
-            bottom: '12px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: 'rgba(15, 23, 42, 0.95)',
-            border: '1px solid var(--border-card)',
-            padding: '4px 10px',
-            borderRadius: '6px',
-            fontSize: '0.65rem',
-            color: isDrowsy ? '#ef4444' : '#38bdf8',
-            fontFamily: 'var(--font-mono)',
-            whiteSpace: 'nowrap',
-            zIndex: 10
-          }}>
-            {isDrowsy ? `EAR: ${ear.toFixed(2)} (CẢNH BÁO NHẮM MẮT!)` : `EAR: ${ear.toFixed(2)} | MAR: ${mar.toFixed(2)}`}
-          </div>
-        )}
-
-        {/* Student attendance face match box */}
-        {mode === 'attendance' && (
-          <div style={{ position: 'relative', width: '220px', height: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
-            <div style={{
-              position: 'absolute',
-              width: '170px',
-              height: '190px',
-              border: '2px solid var(--emerald-safe)',
-              borderRadius: '14px',
-              boxShadow: '0 0 20px rgba(4, 120, 87, 0.15)',
-              background: 'rgba(4, 120, 87, 0.05)'
-            }}>
-              <div style={{ position: 'absolute', top: -4, left: -4, width: 12, height: 12, borderTop: '3px solid var(--emerald-safe)', borderLeft: '3px solid var(--emerald-safe)' }} />
-              <div style={{ position: 'absolute', top: -4, right: -4, width: 12, height: 12, borderTop: '3px solid var(--emerald-safe)', borderRight: '3px solid var(--emerald-safe)' }} />
-              <div style={{ position: 'absolute', bottom: -4, left: -4, width: 12, height: 12, borderBottom: '3px solid var(--emerald-safe)', borderLeft: '3px solid var(--emerald-safe)' }} />
-              <div style={{ position: 'absolute', bottom: -4, right: -4, width: 12, height: 12, borderBottom: '3px solid var(--emerald-safe)', borderRight: '3px solid var(--emerald-safe)' }} />
-
-              <div style={{ position: 'absolute', bottom: '10px', left: '10px', right: '10px', background: 'var(--bg-card)', border: '1px solid var(--border-card)', padding: '4px 6px', borderRadius: '6px', textAlign: 'center' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--emerald-safe)' }}>
-                  Em: Nguyễn Minh Anh
-                </div>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                  Vector Match: 99.4% (Thành công)
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Webcam Error Warning Notice */}
