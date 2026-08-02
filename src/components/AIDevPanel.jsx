@@ -55,12 +55,12 @@ export default function AIDevPanel({ isOpen, onClose }) {
       <div className="glass-panel" style={{ padding: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between', marginBottom: '8px' }}>
           <h3 style={{ fontSize: '0.9rem', color: 'var(--emerald-safe)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Layers size={16} /> 3.1. Nhận diện khuôn mặt & Rà soát khoang xe
+            <Layers size={16} /> 3.1. Nhận diện khuôn mặt học sinh (Face API)
           </h3>
           <span className="badge-safe" style={{ fontSize: '0.65rem' }}>face-api.js</span>
         </div>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '10px' }}>
-          Trích xuất vector 128 chiều (128-D descriptor), khoảng cách Euclid threshold 0.6. State Machine: <code>boarded</code>, <code>alighted</code>, <code>wrong_bus</code>.
+          Trích xuất vector 128 chiều (128-D descriptor), khoảng cách Euclid threshold 0.55. State Machine: <code>boarded</code>, <code>alighted</code>.
         </p>
         <div style={{ background: 'var(--bg-dark)', padding: '10px', borderRadius: '8px', fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: 'var(--primary-teal)' }}>
           <div>// Target Hook in TeacherMonitorView.jsx & DriverTabletView.jsx</div>

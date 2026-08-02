@@ -35,7 +35,6 @@ export default function DriverTabletView({ simulations }) {
   const [modelStatus, setModelStatus] = useState('Chưa tải'); // 'Chưa tải' | 'loading' | 'ready' | 'error'
   const [modelMsg, setModelMsg] = useState('AI Điểm Danh chưa khởi động.');
   const [lastScanResult, setLastScanResult] = useState(null);
-  const [sweepState, setSweepState] = useState('idle'); // idle | scanning | clear | found
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -131,26 +130,16 @@ export default function DriverTabletView({ simulations }) {
     const r = startTrip('BUS-01', students);
     setIsTripActive(true);
     setTripRosterState(rosterSummary(r));
-    setSweepState('idle');
     setLastScanResult(null);
   };
 
   const handleEndTrip = () => {
     if (!tripRosterState) return;
-    setSweepState('scanning');
-    
-    setTimeout(() => {
-      // Check if any student is still on bus
-      const leftBehind = tripRosterState.entries.filter(e => e.status === 'on_bus');
-      if (leftBehind.length > 0) {
-        setSweepState('found');
-        playBeepAlert();
-      } else {
-        setSweepState('clear');
-        setIsTripActive(false);
-        localStorage.removeItem('safebus_trip_BUS-01');
-      }
-    }, 2000);
+    if (window.confirm('Bạn có chắc chắn muốn kết thúc chuyến đi và bàn giao xe?')) {
+      setIsTripActive(false);
+      setTripRosterState(null);
+      localStorage.removeItem('safebus_trip_BUS-01');
+    }
   };
 
   // ─── Điểm Danh Thủ Công ───────────────────────────────────────────────────
@@ -747,54 +736,6 @@ export default function DriverTabletView({ simulations }) {
               </div>
             ) : null}
           </div>
-
-          {/* Sweep & Warnings Section */}
-          {sweepState !== 'idle' && (
-            <div style={{ borderTop: '1px solid var(--border-card)', paddingTop: '10px' }}>
-              {sweepState === 'scanning' && (
-                <div style={{ textAlign: 'center', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                  <div style={{ width: '22px', height: '22px', border: '3px solid rgba(8,145,178,0.2)', borderTopColor: 'var(--accent-cyan)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                  <div style={{ color: 'var(--accent-cyan)', fontWeight: 700, fontSize: '0.7rem' }}>AI ĐANG QUÉT KHOANG XE...</div>
-                </div>
-              )}
-
-              {sweepState === 'clear' && (
-                <div style={{ 
-                  background: 'rgba(5,150,105,0.08)', border: '1px solid var(--emerald-safe)', 
-                  borderRadius: '10px', padding: '10px', textAlign: 'center', 
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' 
-                }}>
-                  <CheckCircle2 size={24} color="var(--emerald-safe)" />
-                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--emerald-safe)' }}>
-                    KHOANG XE TRỐNG - AN TOÀN!
-                  </div>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                    Đã quét toàn bộ các ghế. Có thể tắt máy xe.
-                  </div>
-                </div>
-              )}
-
-              {sweepState === 'found' && (
-                <div style={{ 
-                  background: 'rgba(220,38,38,0.08)', border: '1px solid var(--danger-red)', 
-                  borderRadius: '10px', padding: '10px', textAlign: 'center', 
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-                  animation: 'pulse-danger 1.5s infinite' 
-                }}>
-                  <AlertTriangle size={24} color="var(--danger-red)" />
-                  <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--danger-red)' }}>
-                    CẢNH BÁO: HỌC SINH BỊ BỎ QUÊN!
-                  </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-main)', fontWeight: 700 }}>
-                    {tripRosterState?.still_on_bus.join(', ')} vẫn còn trên xe!
-                  </div>
-                  <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>
-                    Yêu cầu kiểm tra khoang xe ngay lập tức.
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
         </div>
 
