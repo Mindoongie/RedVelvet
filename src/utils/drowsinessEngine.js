@@ -24,14 +24,14 @@ export const DROWSINESS_CONFIG = {
     nguong_mar: 0.55,
     nguong_ngap_giay: 1.5,
     debounce_giay: 3.0,
-    cua_so_phut: 3
+    cua_so_phut: 1
   },
 
   gat_dau: {
     nguong_pitch_do: 20,
     toi_thieu_giu_giay: 1.0,
     hoi_phuc_toi_da_giay: 4.0,
-    cua_so_phut: 3
+    cua_so_phut: 1
   },
 
   noisy_or: {

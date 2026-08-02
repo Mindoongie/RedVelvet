@@ -116,8 +116,8 @@ export default function CameraAiOverlay({
         <div style={{ position: 'absolute', bottom: 12, left: 12, width: 8, height: 8, borderBottom: '2px solid rgba(255,255,255,0.4)', borderLeft: '2px solid rgba(255,255,255,0.4)' }} />
         <div style={{ position: 'absolute', bottom: 12, right: 12, width: 8, height: 8, borderBottom: '2px solid rgba(255,255,255,0.4)', borderRight: '2px solid rgba(255,255,255,0.4)' }} />
 
-        {/* Driver Drowsiness fatigue scanner box */}
-        {mode === 'driver' && (
+        {/* Driver Drowsiness fatigue scanner box (Only visible in simulation mode, hidden when live webcam is active) */}
+        {mode === 'driver' && !useWebcam && (
           <div style={{ position: 'relative', width: '220px', height: '220px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{
               position: 'absolute',
@@ -162,24 +162,28 @@ export default function CameraAiOverlay({
                 border: '1px solid #f59e0b',
                 background: isDrowsy ? 'rgba(245, 158, 11, 0.3)' : 'transparent'
               }} />
-
-              {/* Confidence Badge */}
-              <div style={{
-                position: 'absolute',
-                bottom: '-28px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                background: 'rgba(15, 23, 42, 0.9)',
-                padding: '2px 8px',
-                borderRadius: '4px',
-                fontSize: '0.65rem',
-                color: isDrowsy ? '#ef4444' : '#38bdf8',
-                fontFamily: 'var(--font-mono)',
-                whiteSpace: 'nowrap'
-              }}>
-                {isDrowsy ? `EAR: ${ear.toFixed(2)} (NHẮM MẮT!)` : `EAR: ${ear.toFixed(2)} | MAR: ${mar.toFixed(2)}`}
-              </div>
             </div>
+          </div>
+        )}
+
+        {/* Global Drowsiness Stats Badge (Always visible at the bottom of the view) */}
+        {mode === 'driver' && (
+          <div style={{
+            position: 'absolute',
+            bottom: '12px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(15, 23, 42, 0.95)',
+            border: '1px solid var(--border-card)',
+            padding: '4px 10px',
+            borderRadius: '6px',
+            fontSize: '0.65rem',
+            color: isDrowsy ? '#ef4444' : '#38bdf8',
+            fontFamily: 'var(--font-mono)',
+            whiteSpace: 'nowrap',
+            zIndex: 10
+          }}>
+            {isDrowsy ? `EAR: ${ear.toFixed(2)} (CẢNH BÁO NHẮM MẮT!)` : `EAR: ${ear.toFixed(2)} | MAR: ${mar.toFixed(2)}`}
           </div>
         )}
 

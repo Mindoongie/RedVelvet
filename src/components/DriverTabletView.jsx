@@ -477,7 +477,7 @@ export default function DriverTabletView({ simulations }) {
               { label: 'EAR (Chỉ số mở mắt)', value: earValue.toFixed(2), bad: earValue < 0.20, note: 'Chuẩn ≥ 0.20 (Vùng chết: 0.19-0.23)' },
               { label: 'MAR (Chỉ số ngáp)', value: marValue.toFixed(2), bad: marValue > 0.55, note: 'Chuẩn < 0.55' },
               { label: 'PERCLOS (Tỉ lệ nhắm mắt)', value: `${(drowsinessState.perclos * 100).toFixed(1)}%`, bad: drowsinessState.perclos >= 0.35, note: 'Cửa sổ trượt 60s' },
-              { label: 'Ngáp & Gật đầu', value: `${drowsinessState.yawnsPerMin.toFixed(1)} ypm / ${drowsinessState.nodsPerMin.toFixed(1)} npm`, bad: drowsinessState.yawnsPerMin > 1.0 || drowsinessState.nodsPerMin > 1.0, note: 'Cửa sổ trượt 3p' },
+              { label: 'Ngáp & Gật đầu', value: `${drowsinessState.yawnsPerMin.toFixed(1)} ypm / ${drowsinessState.nodsPerMin.toFixed(1)} npm`, bad: drowsinessState.yawnsPerMin > 1.0 || drowsinessState.nodsPerMin > 1.0, note: 'Cửa sổ trượt 1p' },
               { label: 'Risk Score (Độ rủi ro)', value: `${riskScore}%`, bad: riskScore > 50, note: 'Noisy-OR Fusion' },
             ].map(m => (
               <div key={m.label} style={{ 
