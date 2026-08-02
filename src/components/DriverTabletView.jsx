@@ -741,7 +741,7 @@ export default function DriverTabletView({ simulations }) {
             ) : tripRosterState ? (
               <div style={{ 
                 display: 'flex', flexDirection: 'column', gap: '6px', 
-                overflowY: 'auto', maxHeight: '180px' 
+                overflowY: 'auto', maxHeight: '260px' 
               }}>
                 {tripRosterState.entries.map(s => {
                   let statusLabel = 'Chưa lên';
