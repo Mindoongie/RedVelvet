@@ -77,16 +77,20 @@ export default function ParentAppView({ simulations }) {
   const startWebcam = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: 320, height: 240, facingMode: 'user' } 
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } 
       });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        setCameraActive(true);
+      streamRef.current = stream;
+      setCameraActive(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => {});
+        }
         startFaceDetectionLoop();
-      }
+      }, 50);
     } catch (err) {
-      alert('Không thể mở camera: ' + err.message);
+      console.error("Camera access error:", err);
+      alert('Không thể mở camera: ' + (err.message || 'Vui lòng cấp quyền truy cập camera trong trình duyệt.'));
     }
   };
 
@@ -121,18 +125,23 @@ export default function ParentAppView({ simulations }) {
         const faceapi = window.faceapi;
 
         if (faceapi) {
-          const result = await faceapi.detectSingleFace(
-            video, 
-            new faceapi.TinyFaceDetectorOptions({ inputSize: 224 })
-          ).withFaceLandmarks();
+          try {
+            const result = await faceapi.detectSingleFace(
+              video, 
+              new faceapi.TinyFaceDetectorOptions({ inputSize: 224 })
+            ).withFaceLandmarks();
 
-          const ctx = canvas.getContext('2d');
-          const dims = faceapi.matchDimensions(canvas, video, true);
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const ctx = canvas.getContext('2d');
+            const dims = faceapi.matchDimensions(canvas, video, true);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          if (result) {
-            const resized = faceapi.resizeResults(result, dims);
-            faceapi.draw.drawDetections(canvas, resized);
+            if (result) {
+              const resized = faceapi.resizeResults(result, dims);
+              faceapi.draw.drawDetections(canvas, resized);
+              faceapi.draw.drawFaceLandmarks(canvas, resized);
+            }
+          } catch (e) {
+            console.warn("Detection loop error:", e);
           }
         }
       }
@@ -141,13 +150,9 @@ export default function ParentAppView({ simulations }) {
     drawLoopRef.current = requestAnimationFrame(detect);
   };
 
-  // Capture face sample descriptor
+  // Capture face sample descriptor (1 photo proof)
   const captureSample = async () => {
     if (!window.faceapi || modelStatus !== 'ready' || !cameraActive) return;
-    if (capturedDescriptors.length >= 5) {
-      alert('Đã thu thập đủ 5 mẫu khuôn mặt.');
-      return;
-    }
 
     setIsCapturing(true);
     setModelMsg('Đang nhận diện và trích xuất vector khuôn mặt...');
@@ -175,10 +180,10 @@ export default function ParentAppView({ simulations }) {
       tmpCanvas.getContext('2d').drawImage(video, 0, 0);
       const dataUrl = tmpCanvas.toDataURL('image/jpeg', 0.7);
 
-      setCapturedThumbs(prev => [...prev, dataUrl]);
-      setCapturedDescriptors(prev => [...prev, Array.from(result.descriptor)]);
+      setCapturedThumbs([dataUrl]);
+      setCapturedDescriptors([Array.from(result.descriptor)]);
       
-      setModelMsg(`Đã chụp mẫu ${capturedDescriptors.length + 1}/5 thành công!`);
+      setModelMsg('Đã chụp 1 ảnh minh chứng khuôn mặt thành công!');
     } catch (err) {
       alert('Lỗi chụp mẫu: ' + err.message);
       setModelMsg('Lỗi: ' + err.message);
@@ -194,8 +199,8 @@ export default function ParentAppView({ simulations }) {
       alert('Vui lòng điền đầy đủ Mã học sinh và Họ tên.');
       return;
     }
-    if (capturedDescriptors.length < 3) {
-      alert('Cần thu thập ít nhất 3 mẫu khuôn mặt của bé để đảm bảo AI nhận diện chính xác.');
+    if (capturedDescriptors.length < 1) {
+      alert('Vui lòng chụp 1 ảnh minh chứng khuôn mặt của bé trước khi hoàn tất đăng ký.');
       return;
     }
 
@@ -212,7 +217,7 @@ export default function ParentAppView({ simulations }) {
     setCapturedThumbs([]);
     stopWebcam();
     refreshStudents();
-    alert(`Đã đăng ký xe đưa đón và mẫu mặt cho học sinh ${fullName} thành công!`);
+    alert(`Đã đăng ký xe đưa đón và ảnh minh chứng mặt cho học sinh ${fullName} thành công!`);
   };
 
   // Handle delete student
@@ -465,39 +470,52 @@ export default function ParentAppView({ simulations }) {
                 <div style={{ 
                   position: 'relative', 
                   width: '100%', 
-                  height: '180px', 
-                  background: '#000', 
+                  height: '210px', 
+                  background: '#050a17', 
                   borderRadius: '12px', 
-                  overflow: 'hidden' 
+                  overflow: 'hidden',
+                  border: '1px solid var(--border-card)'
                 }}>
-                  {cameraActive ? (
-                    <>
-                      <video 
-                        ref={videoRef} 
-                        autoPlay 
-                        playsInline 
-                        muted 
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                      />
-                      <canvas 
-                        ref={canvasRef} 
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} 
-                      />
-                    </>
-                  ) : (
+                  <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    muted 
+                    style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      objectFit: 'cover',
+                      display: cameraActive ? 'block' : 'none'
+                    }} 
+                  />
+                  <canvas 
+                    ref={canvasRef} 
+                    style={{ 
+                      position: 'absolute', 
+                      top: 0, 
+                      left: 0, 
+                      width: '100%', 
+                      height: '100%',
+                      display: cameraActive ? 'block' : 'none'
+                    }} 
+                  />
+
+                  {!cameraActive && (
                     <div style={{ 
                       width: '100%', height: '100%', 
                       display: 'flex', flexDirection: 'column', 
                       alignItems: 'center', justifyContent: 'center', 
-                      color: 'var(--text-muted)', gap: '8px' 
+                      color: '#ffffff', gap: '12px',
+                      background: 'radial-gradient(circle, #1e293b 0%, #090d1a 100%)'
                     }}>
-                      <Video size={28} />
+                      <Video size={36} color="var(--accent-cyan)" />
                       <button 
+                        type="button"
                         onClick={startWebcam}
-                        className="btn-secondary"
-                        style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                        className="btn-primary"
+                        style={{ fontSize: '0.8rem', padding: '8px 16px', fontWeight: 700 }}
                       >
-                        Bật Camera Lấy Mẫu
+                        <Video size={16} /> Bật Camera Lấy Mẫu
                       </button>
                     </div>
                   )}
@@ -510,15 +528,21 @@ export default function ParentAppView({ simulations }) {
                 {cameraActive && (
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button 
+                      type="button"
                       onClick={captureSample}
-                      disabled={isCapturing || capturedDescriptors.length >= 5}
+                      disabled={isCapturing}
                       className="btn-primary"
                       style={{ flex: 2, fontSize: '0.75rem', padding: '8px', justifyContent: 'center' }}
                     >
                       <Camera size={14} /> 
-                      <span>{isCapturing ? 'Đang trích xuất...' : `Chụp Mẫu (${capturedDescriptors.length}/5)`}</span>
+                      <span>
+                        {isCapturing 
+                          ? 'Đang trích xuất...' 
+                          : (capturedDescriptors.length >= 1 ? 'Chụp Lại Ảnh Minh Chứng' : 'Chụp Ảnh Minh Chứng')}
+                      </span>
                     </button>
                     <button 
+                      type="button"
                       onClick={stopWebcam}
                       className="btn-secondary"
                       style={{ flex: 1, fontSize: '0.75rem', padding: '8px', justifyContent: 'center' }}
@@ -532,12 +556,12 @@ export default function ParentAppView({ simulations }) {
                 {capturedThumbs.length > 0 && (
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                      <span>Mẫu khuôn mặt đã thu thập:</span>
-                      <span onClick={() => { setCapturedThumbs([]); setCapturedDescriptors([]); }} style={{ color: 'var(--danger-red)', cursor: 'pointer' }}>Xóa hết</span>
+                      <span>Ảnh minh chứng khuôn mặt:</span>
+                      <span onClick={() => { setCapturedThumbs([]); setCapturedDescriptors([]); }} style={{ color: 'var(--danger-red)', cursor: 'pointer' }}>Xóa ảnh</span>
                     </div>
                     <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
                       {capturedThumbs.map((url, idx) => (
-                        <div key={idx} style={{ position: 'relative', width: '42px', height: '42px', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-card)' }}>
+                        <div key={idx} style={{ position: 'relative', width: '48px', height: '48px', borderRadius: '6px', overflow: 'hidden', border: '2px solid var(--accent-cyan)' }}>
                           <img src={url} alt={`thumb-${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
                       ))}
@@ -623,12 +647,12 @@ export default function ParentAppView({ simulations }) {
               <button 
                 type="submit" 
                 className="btn-primary" 
-                disabled={capturedDescriptors.length < 3}
+                disabled={capturedDescriptors.length < 1}
                 style={{ 
                   width: '100%', justifyContent: 'center', 
                   fontSize: '0.8rem', padding: '8px', 
                   marginTop: '4px',
-                  opacity: capturedDescriptors.length < 3 ? 0.6 : 1 
+                  opacity: capturedDescriptors.length < 1 ? 0.6 : 1 
                 }}
               >
                 <Plus size={14} /> Hoàn Tất Đăng Ký
