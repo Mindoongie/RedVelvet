@@ -9,10 +9,10 @@ export default function SosModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   const incidents = [
-    { id: 'traffic_accident', label: 'Tai Nạn Giao Thông', icon: AlertTriangle, color: '#ef4444', channels: ['115 (Cấp cứu)', '113 (Công an)', 'Push Nhà Trường', 'SMS Phụ Huynh'] },
-    { id: 'fire', label: 'Hỏa Hoạn / Cháy Xe', icon: Flame, color: '#f97316', channels: ['114 (Cứu Hỏa)', 'Push Nhà Trường', 'BroadCast Xe'] },
-    { id: 'medical', label: 'Cấp Cứu Y Tế / Sốc Nhiệt', icon: Stethoscope, color: '#06b6d4', channels: ['115 (Cấp cứu)', 'Bác sĩ Trường', 'SMS Phụ Huynh'] },
-    { id: 'intruder', label: 'Kẻ Xâm Nhập / Uy Hiếp', icon: UserX, color: '#a855f7', channels: ['113 (Cảnh Sát)', 'Cảnh báo Ngầm BGH', 'Định vị khẩn'] }
+    { id: 'traffic_accident', label: 'Tai nạn giao thông', icon: AlertTriangle, color: '#ef4444', channels: ['115 (Cấp cứu)', '113 (Công an)', 'Push Nhà Trường', 'SMS Phụ Huynh'] },
+    { id: 'fire', label: 'Hoả hoạn / Cháy xe', icon: Flame, color: '#f97316', channels: ['114 (Cứu Hỏa)', 'Push Nhà Trường', 'BroadCast Xe'] },
+    { id: 'medical', label: 'Cấp cứu y tế / sốc nhiệt', icon: Stethoscope, color: '#06b6d4', channels: ['115 (Cấp cứu)', 'Bác sĩ Trường', 'SMS Phụ Huynh'] },
+    { id: 'intruder', label: 'Kẻ xâm nhập / uy hiếp', icon: UserX, color: '#a855f7', channels: ['113 (Cảnh Sát)', 'Cảnh báo Ngầm BGH', 'Định vị khẩn'] }
   ];
 
   const handleSendSos = () => {
@@ -54,8 +54,7 @@ export default function SosModal({ isOpen, onClose }) {
               <ShieldAlert size={28} />
             </div>
             <div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f87171' }}>PÁT PHÁT TÍN HIỆU SOS KHẨN CẤP</h2>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Tự động điều phối Ma trận EmergencyDispatcher đa kênh &lt; 1 giây</p>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f87171' }}>PHÁT TÍN HIỆU SOS KHẨN CẤP</h2>
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
@@ -105,7 +104,7 @@ export default function SosModal({ isOpen, onClose }) {
                 Hủy bỏ
               </button>
               <button className="btn-sos" style={{ width: '100%', justifyContent: 'center' }} onClick={handleSendSos}>
-                <Send size={18} /> KÍCH HOẠT SOS CẤP TỐC (SEND BROADCAST)
+                <Send size={18} /> KÍCH HOẠT SOS CẤP TỐC
               </button>
             </div>
           </div>
@@ -119,20 +118,8 @@ export default function SosModal({ isOpen, onClose }) {
               </div>
             </div>
 
-            {/* RabbitMQ Dispatcher Log Visualizer */}
-            <div style={{ background: 'var(--bg-dark)', border: '1px solid var(--border-card)', padding: '14px', borderRadius: '10px', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--accent-cyan)', marginBottom: '20px' }}>
-              <div style={{ borderBottom: '1px solid var(--border-card)', paddingBottom: '6px', marginBottom: '8px', color: 'var(--text-muted)' }}>
-                [EmergencyDispatcher Routing Matrix Log]
-              </div>
-              {dispatchLogs.map((log, idx) => (
-                <div key={idx} style={{ marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ color: 'var(--emerald-safe)' }}>✓</span> {log}
-                </div>
-              ))}
-            </div>
-
             <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={handleReset}>
-              Đóng Cảnh Báo SOS
+              Đóng cảnh báo SOS
             </button>
           </div>
         )}

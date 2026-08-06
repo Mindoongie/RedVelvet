@@ -185,7 +185,15 @@ export default function DriverTabletView({ simulations }) {
 
   const handleEndTrip = () => {
     if (!tripRosterState) return;
-    if (window.confirm('Bạn có chắc chắn muốn kết thúc chuyến đi và bàn giao xe?')) {
+    
+    const onBusCount = tripRosterState.counts.on_bus;
+    let message = 'Bạn có chắc chắn muốn kết thúc chuyến đi và bàn giao xe?';
+    
+    if (onBusCount > 0) {
+      message = `⚠ CẢNH BÁO NGUY HIỂM: Vẫn còn ${onBusCount} học sinh chưa xuống xe! Hãy kiểm tra kỹ khoang hành khách để đảm bảo không bỏ quên trẻ em. Bạn có chắc chắn vẫn muốn kết thúc chuyến đi không?`;
+    }
+    
+    if (window.confirm(message)) {
       setIsTripActive(false);
       setTripRosterState(null);
       localStorage.removeItem('safebus_trip_BUS-01');
@@ -369,11 +377,11 @@ export default function DriverTabletView({ simulations }) {
             fontWeight: 800, 
             fontSize: '0.9rem' 
           }}>
-            TABLET LÁI XE
+            Tablet lái xe
           </div>
           <div>
             <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
-              XE BUS-01 – TÀI XẾ: NGUYỄN VĂN HÙNG
+              Xe BUS-01 – Tài xế: Nguyễn Văn Hùng
             </h2>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
               Giám sát an toàn thông minh · Điểm danh khuôn mặt học sinh
@@ -389,7 +397,7 @@ export default function DriverTabletView({ simulations }) {
           {audioEnabled
             ? <Volume2 size={16} color="var(--emerald-safe)" />
             : <VolumeX size={16} color="var(--danger-red)" />}
-          <span>{audioEnabled ? 'Chuông: BẬT' : 'Chuông: TẮT'}</span>
+          <span>{audioEnabled ? 'Chuông: Bật' : 'Chuông: Tắt'}</span>
         </button>
       </div>
 
@@ -403,9 +411,9 @@ export default function DriverTabletView({ simulations }) {
         }}>
           <AlertTriangle size={32} />
           <div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 900 }}>AI PHÁT HIỆN DẤU HIỆU BUỒN NGỦ (CẤP {drowsinessState.alertLevel})!</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 900 }}>AI phát hiện dấu hiệu buồn ngủ (Cấp {drowsinessState.alertLevel})!</div>
             <div style={{ fontSize: '0.9rem', marginTop: '4px', opacity: 0.9 }}>
-              EAR = {earValue.toFixed(2)} | PERCLOS = {(drowsinessState.perclos * 100).toFixed(1)}% | Bối cảnh Lớp 3: {contextLevel === 'cao' ? 'RỦI RO CAO' : 'BÌNH THƯỜNG'}
+              EAR = {earValue.toFixed(2)} | PERCLOS = {(drowsinessState.perclos * 100).toFixed(1)}% | Bối cảnh lớp 3: {contextLevel === 'cao' ? 'Rủi ro cao' : 'Bình thường'}
             </div>
           </div>
         </div>
@@ -418,10 +426,10 @@ export default function DriverTabletView({ simulations }) {
         <div className="glass-panel" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Eye size={15} color="var(--accent-cyan)" /> Giám Sát Tài Xế
+              <Eye size={15} color="var(--accent-cyan)" /> Giám sát tài xế
             </h3>
             <span className={isDrowsy ? 'badge-danger' : 'badge-safe'} style={{ fontSize: '0.62rem' }}>
-              {isDrowsy ? `MỆT MỎI CẤP ${drowsinessState.alertLevel}` : 'TỈNH TÁO'}
+              {isDrowsy ? `Mệt mỏi cấp ${drowsinessState.alertLevel}` : 'Tỉnh táo'}
             </span>
           </div>
 
@@ -477,7 +485,7 @@ export default function DriverTabletView({ simulations }) {
         <div className="glass-panel" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Camera size={16} color="var(--primary-teal)" /> AI Attendance Stream
+              <Camera size={16} color="var(--primary-teal)" /> Luồng điểm danh AI
             </h3>
             
             <button
@@ -491,7 +499,7 @@ export default function DriverTabletView({ simulations }) {
                 padding: '4px 8px'
               }}
             >
-              <ArrowUpDown size={10} /> Mode: {scanMode === 'boarded' ? 'LÊN XE' : 'XUỐNG XE'}
+              <ArrowUpDown size={10} /> Chế độ: {scanMode === 'boarded' ? 'Lên xe' : 'Xuống xe'}
             </button>
           </div>
 
@@ -535,7 +543,7 @@ export default function DriverTabletView({ simulations }) {
                 background: scanMode === 'boarded' ? 'rgba(5,150,105,0.9)' : 'rgba(217,119,6,0.9)',
                 color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700 
               }}>
-                ĐANG ĐIỂM DANH: {scanMode === 'boarded' ? 'LÊN XE' : 'XUỐNG XE'}
+                Đang điểm danh: {scanMode === 'boarded' ? 'Lên xe' : 'Xuống xe'}
               </div>
             )}
 
@@ -564,7 +572,7 @@ export default function DriverTabletView({ simulations }) {
                       fontWeight: 600
                     }}
                   >
-                    {modelStatus === 'loading' ? <RefreshCw size={12} className="spin" /> : 'Kích Hoạt AI'}
+                    {modelStatus === 'loading' ? <RefreshCw size={12} className="spin" /> : 'Kích hoạt AI'}
                   </button>
                 ) : (
                   <button 
@@ -586,7 +594,7 @@ export default function DriverTabletView({ simulations }) {
                       transition: 'all 0.2s ease'
                     }}
                   >
-                    Mở Camera Điểm Danh
+                    Mở camera điểm danh
                   </button>
                 )}
               </div>
@@ -601,7 +609,7 @@ export default function DriverTabletView({ simulations }) {
                 className="btn-secondary"
                 style={{ flex: 1, fontSize: '0.72rem', padding: '6px', justifyContent: 'center' }}
               >
-                Tắt Camera Điểm Danh
+                Tắt camera điểm danh
               </button>
             </div>
           )}
@@ -627,7 +635,7 @@ export default function DriverTabletView({ simulations }) {
                 <div style={{ flexGrow: 1, fontSize: '0.72rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontWeight: 800, color: lastScanResult.success ? 'var(--emerald-safe)' : 'var(--danger-red)' }}>
-                      {lastScanResult.success ? 'AI NHẬN DIỆN THÀNH CÔNG' : 'AI PHÁT HIỆN NGƯỜI LẠ'}
+                      {lastScanResult.success ? 'AI nhận diện thành công' : 'AI phát hiện người lạ'}
                     </span>
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.62rem' }}>{lastScanResult.time}</span>
                   </div>
@@ -653,11 +661,11 @@ export default function DriverTabletView({ simulations }) {
         <div className="glass-panel" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Users size={15} color="var(--accent-bus)" /> Roster & Kiểm Tra Thủ Công
+              <Users size={15} color="var(--accent-bus)" /> Roster & kiểm tra thủ công
             </h3>
             {isTripActive && (
               <span className="badge-safe" style={{ fontSize: '0.65rem' }}>
-                ĐANG CHẠY
+                Đang chạy
               </span>
             )}
           </div>
@@ -670,7 +678,7 @@ export default function DriverTabletView({ simulations }) {
                 className="btn-primary"
                 style={{ width: '100%', justifyContent: 'center', fontSize: '0.75rem', padding: '8px', background: 'linear-gradient(135deg, var(--emerald-safe), #059669)' }}
               >
-                <Play size={14} /> BẮT ĐẦU CHUYẾN ĐI
+                <Play size={14} /> Bắt đầu chuyến đi
               </button>
             ) : (
               <button 
@@ -678,7 +686,7 @@ export default function DriverTabletView({ simulations }) {
                 className="btn-sos"
                 style={{ width: '100%', justifyContent: 'center', fontSize: '0.75rem', padding: '8px', animation: 'none', boxShadow: 'none' }}
               >
-                <Square size={14} /> KẾT THÚC CHUYẾN ĐI
+                <Square size={14} /> Kết thúc chuyến đi
               </button>
             )}
           </div>
@@ -691,19 +699,19 @@ export default function DriverTabletView({ simulations }) {
               padding: '5px 8px', borderRadius: '8px', fontSize: '0.68rem', textAlign: 'center'
             }}>
               <div>
-                <div style={{ color: 'var(--text-muted)' }}>Chưa Lên</div>
+                <div style={{ color: 'var(--text-muted)' }}>Chưa lên</div>
                 <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>
                   {tripRosterState.counts.not_boarded}
                 </div>
               </div>
               <div>
-                <div style={{ color: 'var(--primary-blue)' }}>Trên Xe</div>
+                <div style={{ color: 'var(--primary-blue)' }}>Trên xe</div>
                 <div style={{ fontWeight: 800, color: 'var(--primary-blue)', fontSize: '0.95rem' }}>
                   {tripRosterState.counts.on_bus}
                 </div>
               </div>
               <div>
-                <div style={{ color: 'var(--emerald-safe)' }}>Đã Xuống</div>
+                <div style={{ color: 'var(--emerald-safe)' }}>Đã xuống</div>
                 <div style={{ fontWeight: 800, color: 'var(--emerald-safe)', fontSize: '0.95rem' }}>
                   {tripRosterState.counts.alighted}
                 </div>
@@ -726,7 +734,7 @@ export default function DriverTabletView({ simulations }) {
                 border: '1px dashed var(--border-card)', borderRadius: '10px'
               }}>
                 <UserCheck size={20} />
-                <span style={{ marginTop: '6px' }}>Ấn "Bắt Đầu Chuyến Đi" để nạp danh sách học sinh lên xe.</span>
+                <span style={{ marginTop: '6px' }}>Ấn "Bắt đầu chuyến đi" để nạp danh sách học sinh lên xe.</span>
               </div>
             ) : tripRosterState ? (
               <div style={{ 

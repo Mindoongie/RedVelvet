@@ -10,6 +10,30 @@ export default function AdminDashboard({ simulations }) {
     { id: 'BUS-04', route: 'Tuyến 4: Tân Bình - Phú Nhuận', driver: 'Vũ Đức Cường', teacher: 'Nguyễn Thanh Hà', students: '20 / 20', ear: '0.26', mar: '0.11', status: 'safe' },
   ];
 
+  const handleExportReport = () => {
+    const headers = ['Mã xe', 'Lộ trình', 'Tài xế', 'Giáo viên', 'Học sinh', 'EAR (Mắt)', 'Trạng thái AI'];
+    const rows = fleetData.map(bus => [
+      bus.id,
+      bus.route,
+      bus.driver,
+      bus.teacher,
+      bus.students,
+      bus.status === 'warning' ? '0.16 (CẢNH BÁO)' : bus.ear,
+      bus.status === 'danger' || bus.status === 'warning' ? 'ALERT AI' : 'AN TOÀN'
+    ]);
+    
+    let csvContent = "\uFEFF" + headers.join(',') + '\n' + rows.map(r => r.map(val => `"${val.replace(/"/g, '""')}"`).join(',')).join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `bao_cao_an_toan_doi_xe_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px' }}>
       
@@ -41,7 +65,7 @@ export default function AdminDashboard({ simulations }) {
         {/* Active Buses */}
         <div className="glass-panel" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Tổng Xe Hoạt Động</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Tổng xe hoạt động</span>
             <Bus size={20} color="var(--accent-cyan)" />
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
@@ -55,7 +79,7 @@ export default function AdminDashboard({ simulations }) {
         {/* Total Students */}
         <div className="glass-panel" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Học Sinh Trên Xe</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Học sinh trên xe</span>
             <Users size={20} color="var(--emerald-safe)" />
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
@@ -69,7 +93,7 @@ export default function AdminDashboard({ simulations }) {
         {/* AI Safety Index */}
         <div className="glass-panel" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Chỉ Số An Toàn AI</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Chỉ số an toàn AI</span>
             <ShieldCheck size={20} color="#38bdf8" />
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: simulations.drowsiness || simulations.routeDev ? '#f87171' : '#38bdf8', fontFamily: 'var(--font-mono)' }}>
@@ -89,7 +113,7 @@ export default function AdminDashboard({ simulations }) {
         <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>
-              Bản Đồ Giám Sát Tuyến Xe Bus Real-Time (GPS & Haversine Deviation)
+              Bản đồ giám sát tuyến xe bus real-time
             </h2>
             <div style={{ display: 'flex', gap: '8px' }}>
               <span className="badge-ai">Live Stream GPS</span>
@@ -103,7 +127,7 @@ export default function AdminDashboard({ simulations }) {
         {/* Telemetry & AI Stream Feed */}
         <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ShieldCheck size={18} color="var(--accent-cyan)" /> Nhật Ký Cảnh Báo AI System
+            <ShieldCheck size={18} color="var(--accent-cyan)" /> Nhật ký cảnh báo AI system
           </h2>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', maxHeight: '340px' }}>
@@ -138,10 +162,14 @@ export default function AdminDashboard({ simulations }) {
       {/* Fleet Management Table */}
       <div className="glass-panel" style={{ padding: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>Danh Sách Đội Xe & Trạng Thái Sinh Trắc Học Cabin</h2>
+          <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>Danh sách đội xe & trạng thái sinh trắc học cabin</h2>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.75rem' }}>
-              <FileText size={14} /> Xuất Báo Cáo An Toàn
+            <button 
+              className="btn-secondary" 
+              style={{ padding: '6px 12px', fontSize: '0.75rem' }}
+              onClick={handleExportReport}
+            >
+              <FileText size={14} /> Xuất báo cáo an toàn
             </button>
           </div>
         </div>

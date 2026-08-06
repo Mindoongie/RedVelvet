@@ -75,11 +75,11 @@ export default function App() {
       {/* Footer */}
       <footer style={{ textAlign: 'center', padding: '24px', fontSize: '0.8rem', color: 'var(--text-muted)', borderTop: '1px solid var(--border-card)', marginTop: '40px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-          <span className="badge-ai"><Sparkles size={12} /> EduSafe Bus Startup - Phân Quyền Tự Động</span>
-          <span className="badge-safe">Đã Đăng Nhập: {currentUser.name}</span>
+          <span className="badge-ai"><Sparkles size={12} /> EduSafe Bus Startup</span>
+          <span className="badge-safe">Đã đăng nhập: {currentUser.name}</span>
         </div>
         <p>
-          Dự án Khởi Nghiệp: Hệ Thống Cảnh Báo An Toàn Xe Đưa Đón Học Sinh Thông Minh &copy; 2026
+          Dự án Khởi Nghiệp: Nền tảng AI bảo đảm an toàn xe đưa đón học sinh &copy; 2026
         </p>
       </footer>
 

@@ -32,6 +32,17 @@ export default function ParentAppView({ simulations }) {
     setAlertState('sent');
   };
 
+  const handleCallDriver = () => {
+    alert('Đang kết nối cuộc gọi thoại đến Tài xế Nguyễn Văn Hùng (SĐT: 0912.345.678)...');
+  };
+
+  const handleMessageTeacher = () => {
+    const message = prompt('Nhập nội dung tin nhắn gửi đến Giáo viên giám sát Trần Thị Thu:');
+    if (message && message.trim() !== '') {
+      alert(`Đã gửi tin nhắn đến cô Trần Thị Thu: "${message}"`);
+    }
+  };
+
   // ─── Registration Tab States ───────────────────────────────────────────
   const [studentId, setStudentId] = useState('');
   const [fullName, setFullName] = useState('');
@@ -204,6 +215,14 @@ export default function ParentAppView({ simulations }) {
       return;
     }
 
+    // Check for duplicate ID in registry
+    const registry = getStudentRegistry();
+    const exists = registry.some(s => s.student_id.toLowerCase().trim() === studentId.toLowerCase().trim());
+    if (exists) {
+      alert(`Lỗi: Mã học sinh (ID) "${studentId}" đã tồn tại trên hệ thống. Vui lòng nhập mã học sinh chính xác hoặc liên hệ nhà trường.`);
+      return;
+    }
+
     // Save student details and descriptors
     registerStudent(studentId.trim(), fullName.trim(), capturedDescriptors);
     
@@ -270,7 +289,7 @@ export default function ParentAppView({ simulations }) {
             onClick={() => setActiveTab('tracking')}
             style={{ flex: 1, justifyContent: 'center', padding: '6px' }}
           >
-            <Navigation size={14} /> Theo Dõi Xe
+            <Navigation size={14} /> Theo dõi xe
           </button>
           <button 
             className={`tab-btn ${activeTab === 'register' ? 'active' : ''}`}
@@ -280,7 +299,7 @@ export default function ParentAppView({ simulations }) {
             }}
             style={{ flex: 1, justifyContent: 'center', padding: '6px' }}
           >
-            <Camera size={14} /> Đăng Ký Bé Đi Xe
+            <Camera size={14} /> Đăng ký bé đi xe
           </button>
         </div>
 
@@ -301,7 +320,7 @@ export default function ParentAppView({ simulations }) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                       <AlertTriangle size={20} color="var(--danger-red)" />
                       <div>
-                        <div style={{ fontWeight: 800, color: 'var(--danger-red)', fontSize: '0.85rem' }}>XE ĐANG CHỆCH LỘ TRÌNH!</div>
+                        <div style={{ fontWeight: 700, color: 'var(--danger-red)', fontSize: '0.85rem' }}>Xe đang chệch lộ trình!</div>
                         <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
                           AI GPS phát hiện chệch tuyến &gt; 280m
                         </div>
@@ -325,14 +344,14 @@ export default function ParentAppView({ simulations }) {
                         gap: '6px'
                       }}
                     >
-                      <ShieldAlert size={14} /> GỬI CẢNH BÁO KHẨN CẤP
+                      <ShieldAlert size={14} /> Gửi cảnh báo khẩn cấp
                     </button>
                   </>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <CheckCircle2 size={20} color="var(--emerald-safe)" />
                     <div>
-                      <div style={{ fontWeight: 800, color: 'var(--emerald-safe)', fontSize: '0.82rem' }}>Đã Gửi Cảnh Báo Thành Công!</div>
+                      <div style={{ fontWeight: 700, color: 'var(--emerald-safe)', fontSize: '0.82rem' }}>Đã gửi cảnh báo thành công!</div>
                       <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
                         Nhà trường & Tài xế đã được thông báo.
                       </div>
@@ -350,15 +369,15 @@ export default function ParentAppView({ simulations }) {
               display: 'flex', justifyContent: 'space-between', alignItems: 'center' 
             }}>
               <div>
-                <div style={{ fontSize: '0.65rem', color: 'var(--accent-cyan)', fontWeight: 700 }}>HỌC SINH ĐANG ĐI XE</div>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>Phạm Phương Chi</h3>
+                <div style={{ fontSize: '0.65rem', color: 'var(--accent-cyan)', fontWeight: 700 }}>Học sinh đang đi xe</div>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>Phạm Phương Chi</h3>
                 <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Lớp 2C · Tuyến xe: BUS-01</div>
               </div>
               <div style={{ 
                 width: '38px', height: '38px', borderRadius: '50%', 
                 background: 'var(--primary-teal)', display: 'flex', 
                 alignItems: 'center', justifyContent: 'center', 
-                fontWeight: 800, color: '#fff', fontSize: '0.85rem' 
+                fontWeight: 700, color: '#fff', fontSize: '0.85rem' 
               }}>
                 PC
               </div>
@@ -379,22 +398,22 @@ export default function ParentAppView({ simulations }) {
               borderRadius: '12px', padding: '10px', marginBottom: '12px' 
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Trạng Thái Bé</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Trạng thái bé</span>
                 {isDeviated
-                  ? <span className="badge-danger" style={{ fontSize: '0.65rem' }}>LỆCH TUYẾN</span>
-                  : <span className="badge-safe" style={{ fontSize: '0.65rem' }}>ĐANG TRÊN XE BUS-01</span>
+                  ? <span className="badge-danger" style={{ fontSize: '0.65rem' }}>Lệch tuyến</span>
+                  : <span className="badge-safe" style={{ fontSize: '0.65rem' }}>Đang trên xe BUS-01</span>
                 }
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.72rem' }}>
                 <div style={{ background: 'var(--bg-card)', padding: '6px', borderRadius: '8px', border: '1px solid var(--border-card)' }}>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>ETA Tới Trường</div>
-                  <div style={{ fontWeight: 800, color: isDeviated ? 'var(--danger-red)' : 'var(--primary-blue)', fontFamily: 'var(--font-mono)' }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>ETA tới trường</div>
+                  <div style={{ fontWeight: 700, color: isDeviated ? 'var(--danger-red)' : 'var(--primary-blue)', fontFamily: 'var(--font-mono)' }}>
                     {isDeviated ? 'Đang cập nhật…' : '07:45 AM'}
                   </div>
                 </div>
                 <div style={{ background: 'var(--bg-card)', padding: '6px', borderRadius: '8px', border: '1px solid var(--border-card)' }}>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>Độ Chính Xác GPS</div>
-                  <div style={{ fontWeight: 800, color: isDeviated ? 'var(--danger-red)' : 'var(--emerald-safe)', fontFamily: 'var(--font-mono)' }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.6rem' }}>Độ chính xác GPS</div>
+                  <div style={{ fontWeight: 700, color: isDeviated ? 'var(--danger-red)' : 'var(--emerald-safe)', fontFamily: 'var(--font-mono)' }}>
                     {isDeviated ? 'Yếu (280m)' : 'Tốt (4.2m)'}
                   </div>
                 </div>
@@ -403,7 +422,7 @@ export default function ParentAppView({ simulations }) {
 
             {/* Timeline */}
             <div style={{ marginBottom: '14px' }}>
-              <h4 style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 700 }}>Lịch Sử Di Chuyển Hôm Nay</h4>
+              <h4 style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 700 }}>Lịch sử di chuyển hôm nay</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '8px', borderLeft: '2px solid rgba(8,145,178,0.3)' }}>
                 <div style={{ position: 'relative', paddingLeft: '12px' }}>
                   <div style={{ position: 'absolute', left: '-17px', top: '4px', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--emerald-safe)' }} />
@@ -420,11 +439,11 @@ export default function ParentAppView({ simulations }) {
 
             {/* Phone buttons */}
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button className="btn-secondary" style={{ flex: 1, justifyContent: 'center', fontSize: '0.7rem', padding: '8px' }}>
-                <Phone size={12} color="var(--emerald-safe)" /> Gọi Tài Xế
+              <button onClick={handleCallDriver} className="btn-secondary" style={{ flex: 1, justifyContent: 'center', fontSize: '0.7rem', padding: '8px', cursor: 'pointer' }}>
+                <Phone size={12} color="var(--emerald-safe)" /> Gọi tài xế
               </button>
-              <button className="btn-secondary" style={{ flex: 1, justifyContent: 'center', fontSize: '0.7rem', padding: '8px' }}>
-                <MessageSquare size={12} color="var(--accent-cyan)" /> Nhắn Giáo Viên
+              <button onClick={handleMessageTeacher} className="btn-secondary" style={{ flex: 1, justifyContent: 'center', fontSize: '0.7rem', padding: '8px', cursor: 'pointer' }}>
+                <MessageSquare size={12} color="var(--accent-cyan)" /> Nhắn giáo viên
               </button>
             </div>
           </div>
@@ -435,8 +454,8 @@ export default function ParentAppView({ simulations }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             
             <div style={{ textAlign: 'center', marginBottom: '4px' }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                Đăng Ký Tuyến Đi & Khuôn Mặt AI
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                Đăng ký tuyến đi & khuôn mặt AI
               </h3>
               <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
                 Đăng ký vé xe đưa đón và chụp mẫu nhận diện thông minh cho con
@@ -461,7 +480,7 @@ export default function ParentAppView({ simulations }) {
                   style={{ fontSize: '0.75rem', padding: '6px 12px' }}
                 >
                   {modelStatus === 'loading' ? <RefreshCw size={14} className="spin" /> : <Video size={14} />}
-                  <span>Kích Hoạt AI Camera</span>
+                  <span>Kích hoạt AI camera</span>
                 </button>
               </div>
             ) : (
@@ -515,7 +534,7 @@ export default function ParentAppView({ simulations }) {
                         className="btn-primary"
                         style={{ fontSize: '0.8rem', padding: '8px 16px', fontWeight: 700 }}
                       >
-                        <Video size={16} /> Bật Camera Lấy Mẫu
+                        <Video size={16} /> Bật camera lấy mẫu
                       </button>
                     </div>
                   )}
@@ -538,7 +557,7 @@ export default function ParentAppView({ simulations }) {
                       <span>
                         {isCapturing 
                           ? 'Đang trích xuất...' 
-                          : (capturedDescriptors.length >= 1 ? 'Chụp Lại Ảnh Minh Chứng' : 'Chụp Ảnh Minh Chứng')}
+                          : (capturedDescriptors.length >= 1 ? 'Chụp lại ảnh minh chứng' : 'Chụp ảnh minh chứng')}
                       </span>
                     </button>
                     <button 
@@ -621,7 +640,7 @@ export default function ParentAppView({ simulations }) {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px' }}>
-                  Tuyến Xe Đăng Ký
+                  Tuyến xe đăng ký
                 </label>
                 <select 
                   value={busId}
@@ -655,7 +674,7 @@ export default function ParentAppView({ simulations }) {
                   opacity: capturedDescriptors.length < 1 ? 0.6 : 1 
                 }}
               >
-                <Plus size={14} /> Hoàn Tất Đăng Ký
+                <Plus size={14} /> Hoàn tất đăng ký
               </button>
             </form>
 

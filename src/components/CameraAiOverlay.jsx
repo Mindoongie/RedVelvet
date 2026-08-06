@@ -99,7 +99,8 @@ export default function CameraAiOverlay({
             if (result) {
               // Calculate actual EAR, MAR, Pitch from RAW un-resized positions
               const rawLandmarks = result.landmarks.positions;
-              const computedEar = calculateEAR(rawLandmarks);
+              // Scale EAR by 1.35 to adjust raw 2D landmark ratio offset for normal webcam inputs
+              const computedEar = calculateEAR(rawLandmarks) * 1.35;
               const computedMar = calculateMAR(rawLandmarks);
               const computedPitch = calculatePitch(rawLandmarks);
 

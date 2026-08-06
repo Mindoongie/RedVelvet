@@ -4,6 +4,7 @@ import {
   Clock, Users, UserCheck, PenLine, RefreshCw, MapPin, Bell
 } from 'lucide-react';
 import LiveMapSimulator from './LiveMapSimulator';
+import { getRoster } from '../utils/faceEngine';
 
 // ─── Dữ liệu học sinh ban đầu ────────────────────────────────────────────────
 // status:
@@ -20,21 +21,68 @@ const INITIAL_STUDENTS = [
   { id: 'HS06', name: 'Hoàng Thị Lan',    cls: '5B', station: 'Trạm 3: Masteri',     status: 'waiting', confidence: null, time: null },
 ];
 
-// ─── Trạng thái hiển thị ─────────────────────────────────────────────────────
+// Trạng thái hiển thị
 const STATUS_META = {
-  scanned: { label: 'Đã Quét',     color: 'var(--emerald-safe)', bg: 'rgba(4,120,87,0.06)', border: 'rgba(4,120,87,0.2)' },
-  failed:  { label: 'Quét Thất Bại', color: 'var(--accent-bus)', bg: 'rgba(180,83,9,0.06)', border: 'rgba(180,83,9,0.2)' },
-  manual:  { label: 'Điểm Danh Thủ Công', color: 'var(--primary-blue)', bg: 'rgba(29,78,216,0.06)', border: 'rgba(29,78,216,0.2)' },
-  waiting: { label: 'Chờ Quét',    color: 'var(--text-muted)', bg: 'var(--bg-card-hover)', border: 'var(--border-card)' },
+  scanned: { label: 'Đã quét',     color: 'var(--emerald-safe)', bg: 'rgba(4,120,87,0.06)', border: 'rgba(4,120,87,0.2)' },
+  failed:  { label: 'Quét thất bại', color: 'var(--accent-bus)', bg: 'rgba(180,83,9,0.06)', border: 'rgba(180,83,9,0.2)' },
+  manual:  { label: 'Điểm danh thủ công', color: 'var(--primary-blue)', bg: 'rgba(29,78,216,0.06)', border: 'rgba(29,78,216,0.2)' },
+  waiting: { label: 'Chờ quét',    color: 'var(--text-muted)', bg: 'var(--bg-card-hover)', border: 'var(--border-card)' },
+  alighted: { label: 'Đã xuống xe', color: 'var(--accent-cyan)', bg: 'rgba(6,182,212,0.06)', border: 'rgba(6,182,212,0.2)' },
 };
 
 export default function TeacherMonitorView({ simulations, openSosModal }) {
-  const [students, setStudents] = React.useState(INITIAL_STUDENTS);
+  const getLiveStudents = () => {
+    const roster = getRoster('BUS-01');
+    if (roster) {
+      const entries = Object.values(roster.entries);
+      return entries.map(e => {
+        let status = 'waiting';
+        if (e.status === 'on_bus') {
+          status = e.isManual ? 'manual' : 'scanned';
+        } else if (e.status === 'alighted') {
+          status = 'alighted';
+        }
+        
+        return {
+          id: e.student_id,
+          name: e.full_name,
+          cls: '3A',
+          station: 'Trạm 1: Pearl Plaza',
+          status: status,
+          confidence: e.status === 'on_bus' && !e.isManual ? 99.2 : null,
+          time: e.boarded_at || e.alighted_at || null
+        };
+      });
+    }
+    return INITIAL_STUDENTS;
+  };
+
+  const [students, setStudents] = React.useState(getLiveStudents);
   const [confirmTarget, setConfirmTarget] = React.useState(null); // student.id đang cần xác nhận
   const [activeTab, setActiveTab] = React.useState('attendance'); // 'attendance' | 'map'
 
+  React.useEffect(() => {
+    const handleStorage = () => {
+      setStudents(getLiveStudents());
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
   // Điểm danh thủ công
   const handleManualConfirm = (id) => {
+    const roster = getRoster('BUS-01');
+    if (roster) {
+      if (roster.entries[id]) {
+        const now = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        roster.entries[id].status = 'on_bus';
+        roster.entries[id].boarded_at = now;
+        roster.entries[id].isManual = true;
+        localStorage.setItem('safebus_trip_BUS-01', JSON.stringify(roster));
+        window.dispatchEvent(new Event('storage'));
+      }
+    }
+
     setStudents(prev => prev.map(s =>
       s.id === id
         ? { ...s, status: 'manual', time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) }
@@ -45,6 +93,18 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
 
   // Đánh dấu vắng mặt (HS không có mặt, quét AI bị nhầm)
   const handleMarkAbsent = (id) => {
+    const roster = getRoster('BUS-01');
+    if (roster) {
+      if (roster.entries[id]) {
+        roster.entries[id].status = 'not_boarded';
+        roster.entries[id].boarded_at = null;
+        roster.entries[id].alighted_at = null;
+        roster.entries[id].isManual = false;
+        localStorage.setItem('safebus_trip_BUS-01', JSON.stringify(roster));
+        window.dispatchEvent(new Event('storage'));
+      }
+    }
+
     setStudents(prev => prev.map(s =>
       s.id === id ? { ...s, status: 'waiting', confidence: null, time: null } : s
     ));
@@ -57,6 +117,7 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
     manual:  students.filter(s => s.status === 'manual').length,
     failed:  students.filter(s => s.status === 'failed').length,
     waiting: students.filter(s => s.status === 'waiting').length,
+    alighted: students.filter(s => s.status === 'alighted').length,
   };
   const onBus = counts.scanned + counts.manual;
 
@@ -67,10 +128,10 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
       <div className="glass-panel" style={{ padding: '14px 20px', border: '1px solid var(--primary-teal)', background: 'rgba(13,148,136,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div style={{ background: '#0d9488', padding: '8px 14px', borderRadius: '8px', color: '#fff', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <School size={18} /> GIÁM SÁT TỪ TRƯỜNG
+            <School size={18} /> Giám sát từ trường
           </div>
           <div>
-            <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>GIÁO VIÊN: TRẦN THỊ THU</h2>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>Giáo viên: Trần Thị Thu</h2>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
               Theo dõi điểm danh khuôn mặt từ xa · Xác nhận thủ công khi AI quét thất bại
             </p>
@@ -96,12 +157,13 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
       </div>
 
       {/* ── KPI Summary ─────────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '14px' }}>
         {[
-          { label: 'Đã Quét AI',          value: counts.scanned, color: 'var(--emerald-safe)', icon: <Camera size={18} color="var(--emerald-safe)" /> },
-          { label: 'Điểm Danh Thủ Công',  value: counts.manual,  color: 'var(--primary-blue)',  icon: <PenLine size={18} color="var(--primary-blue)" /> },
-          { label: 'Quét Thất Bại',        value: counts.failed,  color: 'var(--accent-bus)',  icon: <XCircle size={18} color="var(--accent-bus)" /> },
-          { label: 'Chờ Quét',             value: counts.waiting, color: 'var(--text-muted)', icon: <Clock   size={18} color="var(--text-muted)" /> },
+          { label: 'Đã quét AI',          value: counts.scanned, color: 'var(--emerald-safe)', icon: <Camera size={18} color="var(--emerald-safe)" /> },
+          { label: 'Điểm danh thủ công',  value: counts.manual,  color: 'var(--primary-blue)',  icon: <PenLine size={18} color="var(--primary-blue)" /> },
+          { label: 'Quét thất bại',        value: counts.failed,  color: 'var(--accent-bus)',  icon: <XCircle size={18} color="var(--accent-bus)" /> },
+          { label: 'Chờ quét',             value: counts.waiting, color: 'var(--text-muted)', icon: <Clock   size={18} color="var(--text-muted)" /> },
+          { label: 'Đã xuống xe',          value: counts.alighted, color: 'var(--accent-cyan)', icon: <CheckCircle2 size={18} color="var(--accent-cyan)" /> },
         ].map(k => (
           <div key={k.label} className="glass-panel" style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
@@ -116,10 +178,10 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
       {/* ── Tab điều hướng ──────────────────────────────────────────────────── */}
       <div className="role-tabs" style={{ width: 'fit-content' }}>
         <button className={`tab-btn ${activeTab === 'attendance' ? 'active' : ''}`} onClick={() => setActiveTab('attendance')}>
-          <UserCheck size={15} /> Điểm Danh & Quét Mặt
+          <UserCheck size={15} /> Điểm danh & quét mặt
         </button>
         <button className={`tab-btn ${activeTab === 'map' ? 'active' : ''}`} onClick={() => setActiveTab('map')}>
-          <MapPin size={15} /> Vị Trí Xe Thời Gian Thực
+          <MapPin size={15} /> Vị trí xe thời gian thực
         </button>
       </div>
 
@@ -190,7 +252,7 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
           <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                Danh Sách Học Sinh – Điểm Danh & Xác Nhận Thủ Công
+                Danh sách học sinh – Điểm danh & xác nhận thủ công
               </h3>
               <span className="badge-ai" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem' }}>
                 <Users size={12} /> {students.length} HS
@@ -237,7 +299,7 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
                             style={{ background: 'rgba(8,145,178,0.1)', border: '1px solid var(--accent-cyan)', color: 'var(--accent-cyan)', borderRadius: '6px', padding: '4px 10px', fontSize: '0.7rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                           >
                             <PenLine size={12} />
-                            {st.status === 'failed' ? 'Xử Lý' : 'Điểm Danh'}
+                            {st.status === 'failed' ? 'Xử lý' : 'Điểm danh'}
                           </button>
                         )}
 
@@ -273,13 +335,13 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
                             onClick={() => handleManualConfirm(st.id)}
                             style={{ flex: 1, background: 'rgba(4,120,87,0.1)', border: '1px solid var(--emerald-safe)', color: 'var(--emerald-safe)', borderRadius: '8px', padding: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                           >
-                            <CheckCircle2 size={14} /> Xác Nhận Có Mặt (Điểm Danh Thủ Công)
+                            <CheckCircle2 size={14} /> Xác nhận có mặt (Điểm danh thủ công)
                           </button>
                           <button
                             onClick={() => handleMarkAbsent(st.id)}
                             style={{ flex: 1, background: 'rgba(185,28,28,0.1)', border: '1px solid var(--danger-red)', color: 'var(--danger-red)', borderRadius: '8px', padding: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                           >
-                            <XCircle size={14} /> AI Quét Nhầm – Đánh Dấu Vắng
+                            <XCircle size={14} /> AI quét nhầm – Đánh dấu vắng
                           </button>
                         </div>
                       </div>
@@ -298,7 +360,7 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
       {activeTab === 'map' && (
         <div className="glass-panel" style={{ padding: '20px' }}>
           <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <MapPin size={16} color="var(--accent-cyan)" /> Vị Trí Xe Bus 01 – Thời Gian Thực
+            <MapPin size={16} color="var(--accent-cyan)" /> Vị trí xe Bus 01 – Thời gian thực
           </h3>
           <div style={{ height: '420px' }}>
             <LiveMapSimulator isDeviated={simulations.routeDev} />

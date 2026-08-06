@@ -155,7 +155,34 @@ export function getStudentsForBus(busId) {
 
 export function getRoster(busId) {
   try {
-    return JSON.parse(localStorage.getItem('safebus_trip_' + busId) || 'null');
+    const roster = JSON.parse(localStorage.getItem('safebus_trip_' + busId) || 'null');
+    if (roster) {
+      const assigned = getStudentsForBus(busId);
+      let changed = false;
+      for (let s of assigned) {
+        if (!roster.entries[s.student_id]) {
+          roster.entries[s.student_id] = {
+            student_id: s.student_id,
+            full_name: s.full_name,
+            status: 'not_boarded',
+            boarded_at: null,
+            alighted_at: null
+          };
+          changed = true;
+        }
+      }
+      const assignedIds = new Set(assigned.map(s => s.student_id));
+      for (let studentId in roster.entries) {
+        if (!assignedIds.has(studentId)) {
+          delete roster.entries[studentId];
+          changed = true;
+        }
+      }
+      if (changed) {
+        saveRoster(busId, roster);
+      }
+    }
+    return roster;
   } catch (e) {
     return null;
   }

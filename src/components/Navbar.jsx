@@ -103,7 +103,7 @@ export default function Navbar({
                     onClick={() => toggleSimulation('leftBehind')}
                     title="Mô phỏng học sinh bị bỏ quên"
                   >
-                    <Bell size={12} /> Bỏ Quên
+                    <Bell size={12} /> Bỏ quên
                   </button>
                 )}
                 {show.routeDev && (
@@ -117,12 +117,12 @@ export default function Navbar({
                     onClick={() => toggleSimulation('routeDev')}
                     title="Mô phỏng xe chệch lộ trình"
                   >
-                    <MapPin size={12} /> Lệch Tuyến
+                    <MapPin size={12} /> Lệch tuyến
                   </button>
                 )}
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderLeft: '1px solid var(--border-card)', paddingLeft: '6px', marginLeft: '2px' }}>
-                  <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 700 }}>Bối Cảnh Lớp 3:</span>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 700 }}>Bối cảnh lớp 3:</span>
                   <select 
                     value={contextLevel} 
                     onChange={(e) => {
@@ -140,23 +140,15 @@ export default function Navbar({
                       cursor: 'pointer'
                     }}
                   >
-                    <option value="binh_thuong">Bình Thường (EAR &lt; 0.21 nhắm 1.2s)</option>
-                    <option value="cao">Rủi Ro Cao (EAR &lt; 0.21 nhắm 0.8s)</option>
+                    <option value="binh_thuong">Bình thường (EAR &lt; 0.21 nhắm 1.2s)</option>
+                    <option value="cao">Rủi ro cao (EAR &lt; 0.21 nhắm 0.8s)</option>
                   </select>
                 </div>
               </div>
             );
           })()}
 
-          {/* AI Team Handoff Drawer Trigger */}
-          <button 
-            className="btn-secondary"
-            style={{ fontSize: '0.8rem', padding: '6px 12px' }}
-            onClick={() => setDevDrawerOpen(!devDrawerOpen)}
-          >
-            <Code2 size={16} color="var(--accent-cyan)" />
-            <span>AI Specs</span>
-          </button>
+
 
           {/* SOS Trigger */}
           <button 

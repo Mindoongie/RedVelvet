@@ -10,7 +10,7 @@ export default function LoginScreen({ onLogin }) {
   const userDatabase = [
     {
       role: 'admin',
-      roleTitle: 'Quản Trị Viên Nhà Trường',
+      roleTitle: 'Quản trị viên nhà trường',
       email: 'admin@edusafe.edu.vn',
       password: 'admin123',
       name: 'ThS. Nguyễn Văn Quản',
@@ -19,7 +19,7 @@ export default function LoginScreen({ onLogin }) {
     },
     {
       role: 'driver',
-      roleTitle: 'Lái Xe Bus (Tablet Cabin)',
+      roleTitle: 'Lái xe bus (Tablet cabin)',
       email: 'driver.hung@edusafe.edu.vn',
       password: 'driver123',
       name: 'Tài Xế: Nguyễn Văn Hùng',
@@ -28,7 +28,7 @@ export default function LoginScreen({ onLogin }) {
     },
     {
       role: 'teacher',
-      roleTitle: 'Giáo Viên Giám Sát (Tại Trường)',
+      roleTitle: 'Giáo viên giám sát (tại trường)',
       email: 'teacher.thu@edusafe.edu.vn',
       password: 'teacher123',
       name: 'Cô: Trần Thị Thu',
@@ -38,7 +38,7 @@ export default function LoginScreen({ onLogin }) {
     },
     {
       role: 'parent',
-      roleTitle: 'Phụ Huynh Học Sinh',
+      roleTitle: 'Phụ huynh học sinh',
       email: 'parent.chi@edusafe.edu.vn',
       password: 'parent123',
       name: 'Phụ Huynh: Phạm Văn Nam',
@@ -110,13 +110,13 @@ export default function LoginScreen({ onLogin }) {
                   EduSafe Bus
                 </h1>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  Hệ Thống An Toàn Xe Đưa Đón Học Sinh Ứng Dụng AI
+                  Nền tảng AI bảo đảm an toàn xe đưa đón học sinh
                 </p>
               </div>
             </div>
 
             <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: '1.6', marginBottom: '20px' }}>
-              Đăng nhập tài khoản cá nhân. Hệ thống tự động nhận diện vai trò và điều hướng đến màn hình tương ứng:
+              Đăng nhập tài khoản cá nhân:
             </p>
 
             {/* Account fill shortcuts */}
@@ -151,18 +151,13 @@ export default function LoginScreen({ onLogin }) {
                     </div>
 
                     <button className="btn-secondary" style={{ fontSize: '0.65rem', padding: '4px 8px' }}>
-                      Điền Mẫu
+                      Điền mẫu
                     </button>
                   </div>
                 );
               })}
             </div>
 
-          </div>
-
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Sparkles size={14} color="var(--accent-cyan)" />
-            <span>Mô hình AI: face-api.js, Inferensys Driver Safety, Haversine GPS.</span>
           </div>
         </div>
 
@@ -171,14 +166,11 @@ export default function LoginScreen({ onLogin }) {
           
           <div style={{ marginBottom: '24px' }}>
             <span className="badge-ai" style={{ marginBottom: '8px' }}>
-              <Key size={12} /> Đăng Nhập Tự Động Phân Quyền
+              <Key size={12} /> Đăng nhập
             </span>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '6px' }}>
-              Đăng Nhập EduSafe Bus
+              Đăng nhập EduSafe Bus
             </h2>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Nhập email để hệ thống tự nhận diện giao diện phù hợp
-            </p>
           </div>
 
           {errorMsg && (
@@ -192,7 +184,7 @@ export default function LoginScreen({ onLogin }) {
             {/* Email Field */}
             <div>
               <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
-                Địa chỉ Email Tài Khoản
+                Email tài khoản
               </label>
               <div style={{ position: 'relative' }}>
                 <Mail size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
