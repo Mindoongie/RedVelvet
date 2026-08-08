@@ -282,17 +282,18 @@ export default function DriverTabletView({ simulations }) {
   const handleEndTrip = () => {
     if (!tripRosterState) return;
     
-    const onBusCount = tripRosterState.counts.on_bus;
-    let message = 'Bạn có chắc chắn muốn kết thúc chuyến đi và bàn giao xe?';
-    
-    if (onBusCount > 0 && !sweepVerified) {
-      message = `⚠ CẢNH BÁO: Vẫn còn ${onBusCount} học sinh chưa xuống xe! Bạn nên thực hiện "Rà soát khoang xe cuối hành trình" trước khi kết thúc. Bạn có chắc chắn vẫn muốn kết thúc chuyến đi không?`;
+    // Quy định bắt buộc: Chưa rà soát khoang xe thì KHÔNG ĐƯỢC kết thúc chuyến đi
+    if (!sweepVerified) {
+      alert('⛔ QUY ĐỊNH BẮT BUỘC: Bạn chưa hoàn thành quy trình "Rà soát khoang xe cuối hành trình".\n\nVui lòng bấm nút rà soát để kiểm tra không bỏ quên học sinh trước khi được phép kết thúc chuyến đi!');
+      setShowSweepModal(true);
+      return;
     }
     
-    if (window.confirm(message)) {
+    if (window.confirm('Xác nhận kết thúc chuyến đi và bàn giao xe an toàn (Đã xác nhận rà soát khoang xe 100%)?')) {
       setIsTripActive(false);
       setTripRosterState(null);
       setSweepVerified(false);
+      setSweepVerifiedTime(null);
       localStorage.removeItem('safebus_trip_BUS-01');
       window.dispatchEvent(new Event('storage'));
     }
@@ -824,13 +825,17 @@ export default function DriverTabletView({ simulations }) {
                 <button 
                   onClick={handleEndTrip}
                   style={{ 
-                    width: '100%', justifyContent: 'center', fontSize: '0.72rem', padding: '7px', 
-                    background: 'rgba(185,28,28,0.08)', color: 'var(--danger-red)', 
-                    border: '1px solid rgba(185,28,28,0.25)', borderRadius: '8px', fontWeight: 700,
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+                    width: '100%', justifyContent: 'center', fontSize: '0.72rem', padding: '8px', 
+                    background: sweepVerified ? 'rgba(185,28,28,0.12)' : 'var(--bg-card-hover)', 
+                    color: sweepVerified ? 'var(--danger-red)' : 'var(--text-muted)', 
+                    border: `1px solid ${sweepVerified ? 'rgba(185,28,28,0.3)' : 'var(--border-card)'}`, 
+                    borderRadius: '8px', fontWeight: 700,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                    opacity: sweepVerified ? 1 : 0.8
                   }}
+                  title={!sweepVerified ? 'Cần hoàn thành rà soát khoang xe trước khi kết thúc' : 'Kết thúc chuyến đi'}
                 >
-                  <Square size={13} /> Kết thúc chuyến đi
+                  <Square size={13} /> {sweepVerified ? 'Kết thúc chuyến đi (Đã rà soát ✓)' : 'Kết thúc chuyến (Chưa rà soát ⚠)'}
                 </button>
               </div>
             )}
