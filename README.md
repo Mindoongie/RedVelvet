@@ -119,33 +119,35 @@ RedVelvet/
 ## ⚡ 4. Pipeline Hoạt Động Cốt Lõi Của Hệ Thống
 
 ```mermaid
-graph TD
-    subgraph S1["1. AI Edge Face Recognition"]
+flowchart TD
+    subgraph S1["1. Điểm danh AI Edge (Face Recognition)"]
         A1["Camera Cabin Xe"] --> A2["SSD MobileNetV1 Detector"]
         A2 --> A3["68 Face Landmarks"]
         A3 --> A4["128-D Vector Embeddings"]
-        A4 --> A5["So khớp khoảng cách Euclid < 0.55"]
+        A4 --> A5["So khớp khoảng cách Euclid &lt; 0.55"]
         A5 --> A6["Cập nhật Roster: on_bus / alighted"]
     end
 
-    subgraph S2["2. Drowsiness Monitoring Engine"]
-        B1["Camera Giám Sát Tài Xế"] --> B2["Chỉ số EAR < 0.19 (Nhắm mắt)"]
-        B1 --> B3["Chỉ số MAR > 0.55 (Ngáp)"]
-        B1 --> B4["Head Pitch > 20° (Gật đầu)"]
-        B2 & B3 & B4 --> B5["Noisy-OR Bayesian Fusion"]
-        B5 --> B6["Còi hú báo động trong Cabin (EAR < 0.21 > 2.5s)"]
+    subgraph S2["2. Giám sát tài xế ngủ gật (Drowsiness Engine)"]
+        B1["Camera Giám Sát Tài Xế"] --> B2["Chỉ số EAR &lt; 0.19 (Nhắm mắt)"]
+        B1 --> B3["Chỉ số MAR &gt; 0.55 (Ngáp)"]
+        B1 --> B4["Head Pitch &gt; 20 độ (Gật đầu)"]
+        B2 --> B5["Noisy-OR Bayesian Fusion"]
+        B3 --> B5
+        B4 --> B5
+        B5 --> B6["Còi hú báo động trong Cabin (EAR &lt; 0.21 &gt; 2.5s)"]
     end
 
-    subgraph S3["3. GPS & Haversine Deviation"]
+    subgraph S3["3. Định vị GPS &amp; Lệch tuyến Haversine"]
         C1["GPS Telemetry Real-time"] --> C2["Bộ lọc trung bình trượt SMA"]
         C2 --> C3["Chiếu Vector lên Waypoints lộ trình"]
-        C3 --> C4{"Độ lệch > 100m?"}
-        C4 -- Có --> C5["Kích hoạt Cảnh báo chệch lộ trình"]
+        C3 --> C4{"Sai số lớn hơn 100m?"}
+        C4 -->|Đúng| C5["Kích hoạt Cảnh báo chệch lộ trình"]
     end
 
-    subgraph S4["4. Real-time Emergency & SOS Matrix"]
+    subgraph S4["4. Điều phối Báo động khẩn cấp &amp; SOS"]
         D1["Nút SOS / Cảnh báo Phụ huynh"] --> D2["RabbitMQ Priority Queue"]
-        D2 --> D3["WebSocket Broadcast (< 200ms)"]
+        D2 --> D3["WebSocket Broadcast (&lt; 200ms)"]
         D2 --> D4["SMS Gateway (Twilio / 115 / 113)"]
         D3 --> D5["Global Emergency Banner trên toàn bộ App"]
     end
