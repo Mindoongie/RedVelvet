@@ -2,7 +2,9 @@
 
 <div align="center">
 
-![EduSafe Bus Logo](/public/edusafe_logo.png)
+<img src="./public/edusafe_logo.png" alt="EduSafe Bus Logo" width="140" style="border-radius: 16px; margin-bottom: 12px;" />
+
+<br/>
 
 [![React](https://img.shields.io/badge/React-19.x-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
