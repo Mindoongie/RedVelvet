@@ -17,7 +17,7 @@ import { dispatchAlert } from '../utils/alertEngine';
 const DEVIATION_TRIGGER_MS = 10000;
 
 export default function ParentAppView({ simulations }) {
-  const [activeTab, setActiveTab] = useState('tracking'); // 'tracking' | 'register'
+  const [activeTab, setActiveTab] = useState('register'); // Default to 'register' first for demo flow
   
   // ─── Tracking Tab States ────────────────────────────────────────────────
   const [aiDeviated, setAiDeviated] = useState(false);
@@ -371,23 +371,23 @@ export default function ParentAppView({ simulations }) {
         }} />
 
         {/* Tab Selection */}
-        <div className="role-tabs" style={{ marginBottom: '16px', justifyContent: 'center' }}>
-          <button 
-            className={`tab-btn ${activeTab === 'tracking' ? 'active' : ''}`}
-            onClick={() => setActiveTab('tracking')}
-            style={{ flex: 1, justifyContent: 'center', padding: '6px' }}
-          >
-            <Navigation size={14} /> Theo dõi xe
-          </button>
+        <div className="role-tabs" style={{ marginBottom: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
           <button 
             className={`tab-btn ${activeTab === 'register' ? 'active' : ''}`}
             onClick={() => {
               setActiveTab('register');
               stopWebcam();
             }}
-            style={{ flex: 1, justifyContent: 'center', padding: '6px' }}
+            style={{ justifyContent: 'center', padding: '8px 4px', fontSize: '0.72rem', fontWeight: 700 }}
           >
-            <Camera size={14} /> Đăng ký bé đi xe
+            <Upload size={14} /> 1. Đăng ký & Nạp ảnh
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'tracking' ? 'active' : ''}`}
+            onClick={() => setActiveTab('tracking')}
+            style={{ justifyContent: 'center', padding: '8px 4px', fontSize: '0.72rem', fontWeight: 700 }}
+          >
+            <Navigation size={14} /> 2. Theo dõi GPS
           </button>
         </div>
 
@@ -557,33 +557,45 @@ export default function ParentAppView({ simulations }) {
               borderRadius: '12px', padding: '12px' 
             }}>
               <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Camera size={14} color="var(--accent-cyan)" /> Lựa chọn phương thức nạp ảnh Face ID:
+                <Camera size={14} color="var(--accent-cyan)" /> Nạp ảnh Face ID của bé:
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
-                {/* Option 1: File Upload */}
-                <button 
-                  type="button"
-                  onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                  className="btn-secondary"
-                  style={{ 
-                    flexDirection: 'column', padding: '8px 4px', fontSize: '0.65rem', 
-                    justifyContent: 'center', textAlign: 'center', gap: '4px',
-                    background: 'rgba(56,189,248,0.08)', borderColor: 'rgba(56,189,248,0.3)', color: 'var(--accent-cyan)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <Upload size={16} />
-                  <span>Tải ảnh từ máy</span>
-                </button>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  accept="image/*" 
-                  style={{ display: 'none' }} 
-                  onChange={handleFileUpload} 
-                />
+              {/* Big Clickable Dropzone */}
+              <div 
+                onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                style={{
+                  border: '2px dashed var(--accent-cyan)',
+                  borderRadius: '10px',
+                  padding: '14px 10px',
+                  textAlign: 'center',
+                  background: 'rgba(56,189,248,0.06)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '4px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Upload size={22} color="var(--accent-cyan)" />
+                <div style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                  📁 Bấm để Tải ảnh chân dung từ máy (.jpg, .png)
+                </div>
+                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>
+                  Hỗ trợ tải từ bộ nhớ máy tính, điện thoại hoặc kéo thả ảnh vào đây
+                </div>
+              </div>
 
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                accept="image/*" 
+                style={{ display: 'none' }} 
+                onChange={handleFileUpload} 
+              />
+
+              {/* Alternative Quick Actions */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                 {/* Option 2: Webcam Camera */}
                 <button 
                   type="button"
@@ -596,16 +608,16 @@ export default function ParentAppView({ simulations }) {
                   }}
                   className="btn-secondary"
                   style={{ 
-                    flexDirection: 'column', padding: '8px 4px', fontSize: '0.65rem', 
-                    justifyContent: 'center', textAlign: 'center', gap: '4px',
+                    padding: '7px 4px', fontSize: '0.68rem', 
+                    justifyContent: 'center', textAlign: 'center', gap: '5px',
                     background: cameraActive ? 'rgba(16,185,129,0.15)' : 'var(--bg-card)', 
                     borderColor: cameraActive ? 'var(--emerald-safe)' : 'var(--border-card)',
                     color: cameraActive ? 'var(--emerald-safe)' : 'var(--text-main)',
-                    cursor: 'pointer'
+                    cursor: 'pointer', fontWeight: 700
                   }}
                 >
-                  <Camera size={16} />
-                  <span>Chụp Webcam</span>
+                  <Camera size={14} />
+                  <span>Chụp từ Webcam</span>
                 </button>
 
                 {/* Option 3: Quick Preset */}
@@ -614,14 +626,14 @@ export default function ParentAppView({ simulations }) {
                   onClick={() => handleQuickSample('chi', 'HS-001', 'Phạm Phương Chi')}
                   className="btn-secondary"
                   style={{ 
-                    flexDirection: 'column', padding: '8px 4px', fontSize: '0.65rem', 
-                    justifyContent: 'center', textAlign: 'center', gap: '4px',
+                    padding: '7px 4px', fontSize: '0.68rem', 
+                    justifyContent: 'center', textAlign: 'center', gap: '5px',
                     background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.3)', color: '#f59e0b',
-                    cursor: 'pointer'
+                    cursor: 'pointer', fontWeight: 700
                   }}
                 >
-                  <Sparkles size={16} />
-                  <span>Mẫu chuẩn</span>
+                  <Sparkles size={14} />
+                  <span>Nạp mẫu chuẩn</span>
                 </button>
               </div>
 
