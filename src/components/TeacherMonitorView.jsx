@@ -4,7 +4,7 @@ import {
   Clock, Users, UserCheck, PenLine, RefreshCw, MapPin, Bell
 } from 'lucide-react';
 import LiveMapSimulator from './LiveMapSimulator';
-import { getRoster } from '../utils/faceEngine';
+import { getRoster, saveRoster, startTrip, getStudentsForBus } from '../utils/faceEngine';
 import { getActiveAlerts, subscribeToAlerts } from '../utils/alertEngine';
 
 // ─── Dữ liệu học sinh ban đầu ────────────────────────────────────────────────
@@ -14,12 +14,12 @@ import { getActiveAlerts, subscribeToAlerts } from '../utils/alertEngine';
 //   'failed'   – AI quét thất bại (không nhận ra / độ tin cậy thấp)
 //   'manual'   – giáo viên xác nhận thủ công
 const INITIAL_STUDENTS = [
-  { id: 'HS01', name: 'Nguyễn Minh Anh',  cls: '3A', station: 'Trạm 1: Vinhomes',    status: 'scanned', confidence: 99.4, time: '07:15' },
-  { id: 'HS02', name: 'Lê Hoàng Khoa',    cls: '3A', station: 'Trạm 1: Vinhomes',    status: 'scanned', confidence: 98.9, time: '07:16' },
-  { id: 'HS03', name: 'Trần Gia Bảo',     cls: '4B', station: 'Trạm 2: Pearl Plaza', status: 'failed',  confidence: 43.2, time: '07:28' },
-  { id: 'HS04', name: 'Phạm Phương Chi',  cls: '2C', station: 'Trạm 2: Pearl Plaza', status: 'scanned', confidence: 99.6, time: '07:29' },
-  { id: 'HS05', name: 'Vũ Đức Minh',      cls: '1A', station: 'Trạm 3: Masteri',     status: 'waiting', confidence: null, time: null },
-  { id: 'HS06', name: 'Hoàng Thị Lan',    cls: '5B', station: 'Trạm 3: Masteri',     status: 'waiting', confidence: null, time: null },
+  { id: 'HS-002', name: 'Nguyễn Minh Anh',  cls: '3A', station: 'Trạm 1: Vinhomes',    status: 'scanned', confidence: 99.4, time: '07:15' },
+  { id: 'HS-004', name: 'Lê Hoàng Khoa',    cls: '3A', station: 'Trạm 1: Vinhomes',    status: 'scanned', confidence: 98.9, time: '07:16' },
+  { id: 'HS-003', name: 'Trần Gia Bảo',     cls: '4B', station: 'Trạm 2: Pearl Plaza', status: 'failed',  confidence: 43.2, time: '07:28' },
+  { id: 'HS-001', name: 'Phạm Phương Chi',  cls: '2C', station: 'Trạm 2: Pearl Plaza', status: 'scanned', confidence: 99.6, time: '07:29' },
+  { id: 'HS-005', name: 'Vũ Đức Minh',      cls: '1A', station: 'Trạm 3: Masteri',     status: 'waiting', confidence: null, time: null },
+  { id: 'HS-006', name: 'Hoàng Thị Lan',    cls: '5B', station: 'Trạm 3: Masteri',     status: 'waiting', confidence: null, time: null },
 ];
 
 // Trạng thái hiển thị
@@ -34,24 +34,32 @@ const STATUS_META = {
 export default function TeacherMonitorView({ simulations, openSosModal }) {
   const getLiveStudents = () => {
     const roster = getRoster('BUS-01');
-    if (roster) {
+    if (roster && roster.entries && Object.keys(roster.entries).length > 0) {
       const entries = Object.values(roster.entries);
+      const studentMap = {};
+      INITIAL_STUDENTS.forEach(s => { studentMap[s.id] = s; });
+
       return entries.map(e => {
         let status = 'waiting';
         if (e.status === 'on_bus') {
           status = e.isManual ? 'manual' : 'scanned';
         } else if (e.status === 'alighted') {
           status = 'alighted';
+        } else if (e.status === 'failed') {
+          status = 'failed';
+        } else if (studentMap[e.student_id]) {
+          status = studentMap[e.student_id].status;
         }
         
+        const init = studentMap[e.student_id] || {};
         return {
           id: e.student_id,
           name: e.full_name,
-          cls: '3A',
-          station: 'Trạm 1: Pearl Plaza',
+          cls: init.cls || '3A',
+          station: init.station || 'Trạm 1: Pearl Plaza',
           status: status,
-          confidence: e.status === 'on_bus' && !e.isManual ? 99.2 : null,
-          time: e.boarded_at || e.alighted_at || null
+          confidence: e.status === 'on_bus' ? (e.isManual ? 100 : 99.4) : (init.confidence || null),
+          time: e.boarded_at || e.alighted_at || init.time || null
         };
       });
     }
@@ -81,21 +89,35 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
 
   // Điểm danh thủ công
   const handleManualConfirm = (id) => {
-    const roster = getRoster('BUS-01');
-    if (roster) {
+    let roster = getRoster('BUS-01');
+    if (!roster) {
+      const assigned = getStudentsForBus('BUS-01');
+      roster = startTrip('BUS-01', assigned.length > 0 ? assigned : INITIAL_STUDENTS.map(s => ({ student_id: s.id, full_name: s.name })));
+    }
+    
+    if (roster && roster.entries) {
+      const now = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
       if (roster.entries[id]) {
-        const now = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
         roster.entries[id].status = 'on_bus';
         roster.entries[id].boarded_at = now;
         roster.entries[id].isManual = true;
-        localStorage.setItem('safebus_trip_BUS-01', JSON.stringify(roster));
-        window.dispatchEvent(new Event('storage'));
+      } else {
+        const sTarget = students.find(s => s.id === id);
+        roster.entries[id] = {
+          student_id: id,
+          full_name: sTarget ? sTarget.name : 'Học sinh',
+          status: 'on_bus',
+          boarded_at: now,
+          isManual: true
+        };
       }
+      saveRoster('BUS-01', roster);
+      window.dispatchEvent(new Event('storage'));
     }
 
     setStudents(prev => prev.map(s =>
       s.id === id
-        ? { ...s, status: 'manual', time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) }
+        ? { ...s, status: 'manual', confidence: 100, time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) }
         : s
     ));
     setConfirmTarget(null);
@@ -103,16 +125,14 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
 
   // Đánh dấu vắng mặt (HS không có mặt, quét AI bị nhầm)
   const handleMarkAbsent = (id) => {
-    const roster = getRoster('BUS-01');
-    if (roster) {
-      if (roster.entries[id]) {
-        roster.entries[id].status = 'not_boarded';
-        roster.entries[id].boarded_at = null;
-        roster.entries[id].alighted_at = null;
-        roster.entries[id].isManual = false;
-        localStorage.setItem('safebus_trip_BUS-01', JSON.stringify(roster));
-        window.dispatchEvent(new Event('storage'));
-      }
+    let roster = getRoster('BUS-01');
+    if (roster && roster.entries && roster.entries[id]) {
+      roster.entries[id].status = 'not_boarded';
+      roster.entries[id].boarded_at = null;
+      roster.entries[id].alighted_at = null;
+      roster.entries[id].isManual = false;
+      saveRoster('BUS-01', roster);
+      window.dispatchEvent(new Event('storage'));
     }
 
     setStudents(prev => prev.map(s =>
@@ -219,40 +239,49 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
             </div>
 
             {/* Camera overlay */}
-            <div style={{ height: '260px' }}>
-              {/* Mô phỏng camera từ xe gửi về — trong thực tế đây là WebRTC stream */}
-              <div style={{ position: 'relative', height: '100%', background: '#050a17', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-card)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div className="scan-line" />
-                {/* Face bounding box mô phỏng */}
-                <div style={{ position: 'relative', width: '180px', height: '200px' }}>
-                  <div style={{ position: 'absolute', inset: 0, border: '2px dashed #10b981', borderRadius: '14px', boxShadow: '0 0 18px rgba(16,185,129,0.3)', background: 'rgba(16,185,129,0.04)' }} />
-                  <div style={{ position: 'absolute', top: -4, left: -4, width: 12, height: 12, borderTop: '3px solid #34d399', borderLeft: '3px solid #34d399' }} />
-                  <div style={{ position: 'absolute', top: -4, right: -4, width: 12, height: 12, borderTop: '3px solid #34d399', borderRight: '3px solid #34d399' }} />
-                  <div style={{ position: 'absolute', bottom: -4, left: -4, width: 12, height: 12, borderBottom: '3px solid #34d399', borderLeft: '3px solid #34d399' }} />
-                  <div style={{ position: 'absolute', bottom: -4, right: -4, width: 12, height: 12, borderBottom: '3px solid #34d399', borderRight: '3px solid #34d399' }} />
-                  <div style={{ position: 'absolute', bottom: 8, left: 8, right: 8, background: 'var(--bg-card)', padding: '4px 6px', borderRadius: '6px', textAlign: 'center', border: '1px solid var(--border-card)' }}>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--emerald-safe)', fontWeight: 700 }}>Nguyễn Minh Anh</div>
-                    <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>Match: 99.4% ✓</div>
+            {(() => {
+              const activeStudent = students.find(s => s.status === 'manual' || s.status === 'scanned') || students[0] || { name: 'Học sinh', confidence: 99.4, status: 'scanned', cls: '3A', time: '07:15' };
+              const isManual = activeStudent.status === 'manual';
+              return (
+                <>
+                  <div style={{ height: '260px' }}>
+                    <div style={{ position: 'relative', height: '100%', background: '#050a17', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-card)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div className="scan-line" />
+                      {/* Face bounding box mô phỏng */}
+                      <div style={{ position: 'relative', width: '180px', height: '200px' }}>
+                        <div style={{ position: 'absolute', inset: 0, border: `2px dashed ${isManual ? '#1d4ed8' : '#10b981'}`, borderRadius: '14px', boxShadow: isManual ? '0 0 18px rgba(29,78,216,0.3)' : '0 0 18px rgba(16,185,129,0.3)', background: isManual ? 'rgba(29,78,216,0.05)' : 'rgba(16,185,129,0.04)' }} />
+                        <div style={{ position: 'absolute', top: -4, left: -4, width: 12, height: 12, borderTop: `3px solid ${isManual ? '#60a5fa' : '#34d399'}`, borderLeft: `3px solid ${isManual ? '#60a5fa' : '#34d399'}` }} />
+                        <div style={{ position: 'absolute', top: -4, right: -4, width: 12, height: 12, borderTop: `3px solid ${isManual ? '#60a5fa' : '#34d399'}`, borderRight: `3px solid ${isManual ? '#60a5fa' : '#34d399'}` }} />
+                        <div style={{ position: 'absolute', bottom: -4, left: -4, width: 12, height: 12, borderBottom: `3px solid ${isManual ? '#60a5fa' : '#34d399'}`, borderLeft: `3px solid ${isManual ? '#60a5fa' : '#34d399'}` }} />
+                        <div style={{ position: 'absolute', bottom: -4, right: -4, width: 12, height: 12, borderBottom: `3px solid ${isManual ? '#60a5fa' : '#34d399'}`, borderRight: `3px solid ${isManual ? '#60a5fa' : '#34d399'}` }} />
+                        <div style={{ position: 'absolute', bottom: 8, left: 8, right: 8, background: 'var(--bg-card)', padding: '4px 6px', borderRadius: '6px', textAlign: 'center', border: '1px solid var(--border-card)' }}>
+                          <div style={{ fontSize: '0.72rem', color: isManual ? 'var(--primary-blue)' : 'var(--emerald-safe)', fontWeight: 700 }}>{activeStudent.name}</div>
+                          <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                            {isManual ? 'Điểm danh thủ công ✓' : `Match: ${activeStudent.confidence || 99.4}% ✓`}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ position: 'absolute', top: 10, left: 10 }}>
+                        <span className="badge-ai" style={{ fontSize: '0.62rem', background: 'var(--bg-card)', backdropFilter: 'blur(6px)' }}>
+                          <Camera size={10} /> Live từ Xe Bus 01
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div style={{ position: 'absolute', top: 10, left: 10 }}>
-                  <span className="badge-ai" style={{ fontSize: '0.62rem', background: 'var(--bg-card)', backdropFilter: 'blur(6px)' }}>
-                    <Camera size={10} /> Live từ Xe Bus 01
-                  </span>
-                </div>
-              </div>
-            </div>
 
-            {/* Kết quả quét cuối */}
-            <div style={{ background: 'var(--bg-card-hover)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-card)', fontSize: '0.78rem' }}>
-              <div style={{ color: 'var(--emerald-safe)', fontWeight: 600, marginBottom: '4px', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                <CheckCircle2 size={14} /> Lần quét gần nhất thành công:
-              </div>
-              <div style={{ color: 'var(--text-main)' }}>Nguyễn Minh Anh – Lớp 3A</div>
-              <div style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
-                Dist: 0.12 / threshold 0.60 · Lên xe 07:15
-              </div>
-            </div>
+                  {/* Kết quả quét cuối */}
+                  <div style={{ background: 'var(--bg-card-hover)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-card)', fontSize: '0.78rem' }}>
+                    <div style={{ color: isManual ? 'var(--primary-blue)' : 'var(--emerald-safe)', fontWeight: 600, marginBottom: '4px', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <CheckCircle2 size={14} /> Lần quét / xác nhận gần nhất:
+                    </div>
+                    <div style={{ color: 'var(--text-main)', fontWeight: 700 }}>{activeStudent.name} – Lớp {activeStudent.cls}</div>
+                    <div style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
+                      {isManual ? 'Xác nhận bởi Giáo viên (Manual Fallback)' : 'Dist: 0.12 / threshold 0.60'} · {activeStudent.time ? `Lên xe ${activeStudent.time}` : 'Vừa cập nhật'}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
 
             {/* Thống kê tiến trình */}
             <div>
