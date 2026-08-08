@@ -242,41 +242,6 @@ export default function DriverTabletView({ simulations }) {
     setIsTripActive(true);
     setTripRosterState(rosterSummary(r));
     setLastScanResult(null);
-    setSweepVerified(false);
-    setSweepVerifiedTime(null);
-  };
-
-  const [showSweepModal, setShowSweepModal] = useState(false);
-  const [sweepVerified, setSweepVerified] = useState(false);
-  const [sweepVerifiedTime, setSweepVerifiedTime] = useState(null);
-  const [sweepChecklist, setSweepChecklist] = useState({
-    walkedToBack: true,
-    underSeats: true,
-    backRowCheck: true,
-    doorsWindows: true
-  });
-
-  const handleConfirmSweep = () => {
-    // Mark all remaining students as safely checked/alighted
-    const current = getRoster('BUS-01');
-    if (current && current.entries) {
-      const now = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-      for (let sid in current.entries) {
-        if (current.entries[sid].status === 'on_bus') {
-          current.entries[sid].status = 'alighted';
-          current.entries[sid].alighted_at = now;
-        }
-      }
-      localStorage.setItem('safebus_trip_BUS-01', JSON.stringify(current));
-      setTripRosterState(rosterSummary(current));
-      window.dispatchEvent(new Event('storage'));
-    }
-
-    const nowStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-    setSweepVerified(true);
-    setSweepVerifiedTime(nowStr);
-    setShowSweepModal(false);
-    playBeepSuccess();
   };
 
   const handleEndTrip = () => {
@@ -285,14 +250,13 @@ export default function DriverTabletView({ simulations }) {
     const onBusCount = tripRosterState.counts.on_bus;
     let message = 'Bạn có chắc chắn muốn kết thúc chuyến đi và bàn giao xe?';
     
-    if (onBusCount > 0 && !sweepVerified) {
-      message = `⚠ CẢNH BÁO NGUY HIỂM: Vẫn còn ${onBusCount} học sinh chưa xác nhận xuống xe! Bạn nên thực hiện quy trình "Rà soát khoang xe cuối hành trình" trước khi kết thúc. Bạn có chắc chắn vẫn muốn đóng chuyến không?`;
+    if (onBusCount > 0) {
+      message = `⚠ CẢNH BÁO NGUY HIỂM: Vẫn còn ${onBusCount} học sinh chưa xuống xe! Bạn có chắc chắn muốn kết thúc chuyến đi không?`;
     }
     
     if (window.confirm(message)) {
       setIsTripActive(false);
       setTripRosterState(null);
-      setSweepVerified(false);
       localStorage.removeItem('safebus_trip_BUS-01');
       window.dispatchEvent(new Event('storage'));
     }
@@ -796,55 +760,23 @@ export default function DriverTabletView({ simulations }) {
           </div>
 
           {/* Trip Control Buttons */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
             {!isTripActive ? (
               <button 
                 onClick={handleStartTrip}
                 className="btn-primary"
-                style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '10px', background: 'linear-gradient(135deg, var(--emerald-safe), #059669)' }}
+                style={{ width: '100%', justifyContent: 'center', fontSize: '0.75rem', padding: '8px', background: 'linear-gradient(135deg, var(--emerald-safe), #059669)' }}
               >
-                <Play size={15} /> Bắt đầu chuyến đi
+                <Play size={14} /> Bắt đầu chuyến đi
               </button>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button 
-                  onClick={() => setShowSweepModal(true)}
-                  style={{ 
-                    width: '100%', justifyContent: 'center', fontSize: '0.78rem', padding: '9px 12px', 
-                    background: 'linear-gradient(135deg, #b45309, #d97706)', border: '1px solid #f59e0b', 
-                    color: '#fff', borderRadius: '8px', fontWeight: 800, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    boxShadow: '0 4px 14px rgba(180,83,9,0.3)',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <ShieldCheck size={16} /> Rà soát khoang xe cuối hành trình
-                </button>
-
-                <button 
-                  onClick={handleEndTrip}
-                  style={{ 
-                    width: '100%', justifyContent: 'center', fontSize: '0.72rem', padding: '7px', 
-                    background: 'rgba(185,28,28,0.08)', color: 'var(--danger-red)', 
-                    border: '1px solid rgba(185,28,28,0.25)', borderRadius: '8px', fontWeight: 700,
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
-                  }}
-                >
-                  <Square size={13} /> Kết thúc chuyến đi
-                </button>
-              </div>
-            )}
-
-            {/* Sweep Verified Badge */}
-            {sweepVerified && (
-              <div style={{
-                background: 'rgba(4,120,87,0.1)', border: '1px solid var(--emerald-safe)',
-                borderRadius: '8px', padding: '8px 10px', fontSize: '0.72rem', color: 'var(--emerald-safe)',
-                display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700
-              }}>
-                <ShieldCheck size={16} />
-                <span>Đã rà soát khoang xe an toàn (100% Zero Leave-Behind) · {sweepVerifiedTime}</span>
-              </div>
+              <button 
+                onClick={handleEndTrip}
+                className="btn-sos"
+                style={{ width: '100%', justifyContent: 'center', fontSize: '0.75rem', padding: '8px', animation: 'none', boxShadow: 'none' }}
+              >
+                <Square size={14} /> Kết thúc chuyến đi
+              </button>
             )}
           </div>
 
@@ -958,121 +890,6 @@ export default function DriverTabletView({ simulations }) {
         </div>
 
       </div>
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          END-TRIP CABIN SWEEP MODAL (QUY TRÌNH RÀ SOÁT KHOANG XE CUỐI HÀNH TRÌNH)
-      ══════════════════════════════════════════════════════════════════════ */}
-      {showSweepModal && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(5, 10, 23, 0.85)',
-          backdropFilter: 'blur(8px)', zIndex: 9999,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
-        }}>
-          <div className="glass-panel" style={{
-            maxWidth: '520px', width: '100%',
-            background: 'var(--bg-card)', border: '1px solid #f59e0b',
-            borderRadius: '16px', padding: '24px',
-            boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
-            display: 'flex', flexDirection: 'column', gap: '16px'
-          }}>
-            {/* Modal Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ background: 'rgba(217,119,6,0.15)', padding: '10px', borderRadius: '10px', color: '#f59e0b' }}>
-                  <ShieldCheck size={26} />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                    Rà soát khoang xe cuối hành trình
-                  </h3>
-                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                    End-trip Cabin Sweep Protocol · Cam kết 100% không bỏ quên học sinh
-                  </p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowSweepModal(false)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.2rem', padding: '4px' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Current Bus Status Info */}
-            <div style={{
-              background: tripRosterState && tripRosterState.counts.on_bus > 0 ? 'rgba(217,119,6,0.1)' : 'rgba(4,120,87,0.08)',
-              border: `1px solid ${tripRosterState && tripRosterState.counts.on_bus > 0 ? 'rgba(217,119,6,0.3)' : 'rgba(4,120,87,0.3)'}`,
-              borderRadius: '10px', padding: '12px 14px', fontSize: '0.78rem'
-            }}>
-              <div style={{ fontWeight: 700, color: tripRosterState && tripRosterState.counts.on_bus > 0 ? '#d97706' : 'var(--emerald-safe)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {tripRosterState && tripRosterState.counts.on_bus > 0 ? (
-                  <>⚠ Vẫn còn {tripRosterState.counts.on_bus} học sinh đang được ghi nhận trên xe</>
-                ) : (
-                  <>✓ Toàn bộ học sinh đã được ghi nhận xuống xe</>
-                )}
-              </div>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>
-                Tuyến xe: <strong>BUS-01</strong> · Tài xế: <strong>Nguyễn Văn Hùng</strong> · Biển số: <strong>51B-882.91</strong>
-              </div>
-            </div>
-
-            {/* Safety Checklist */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                Danh mục kiểm tra an toàn bắt buộc trước khi khóa xe:
-              </div>
-
-              {[
-                { key: 'walkedToBack', label: '1. Đã trực tiếp đi bộ từ đầu xe xuống băng ghế số 05 cuối xe.' },
-                { key: 'underSeats', label: '2. Đã kiểm tra khoảng trống gầm ghế và khe ghế, không có học sinh nằm ngủ.' },
-                { key: 'backRowCheck', label: '3. Không còn ba lô, áo khoác, bình nước của học sinh bị bỏ quên.' },
-                { key: 'doorsWindows', label: '4. Đã chốt an toàn cửa sổ hông và cửa thoát hiểm sau xe.' },
-              ].map(item => (
-                <label key={item.key} style={{
-                  display: 'flex', alignItems: 'center', gap: '10px',
-                  background: 'var(--bg-card-hover)', border: '1px solid var(--border-card)',
-                  padding: '9px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-main)'
-                }}>
-                  <input 
-                    type="checkbox"
-                    checked={sweepChecklist[item.key]}
-                    onChange={(e) => setSweepChecklist({ ...sweepChecklist, [item.key]: e.target.checked })}
-                    style={{ width: '16px', height: '16px', accentColor: 'var(--emerald-safe)', cursor: 'pointer' }}
-                  />
-                  <span>{item.label}</span>
-                </label>
-              ))}
-            </div>
-
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
-              <button 
-                onClick={() => setShowSweepModal(false)}
-                style={{
-                  flex: 1, padding: '10px', background: 'var(--bg-card-hover)',
-                  border: '1px solid var(--border-card)', color: 'var(--text-muted)',
-                  borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer'
-                }}
-              >
-                Hủy bỏ
-              </button>
-
-              <button 
-                onClick={handleConfirmSweep}
-                style={{
-                  flex: 2, padding: '10px',
-                  background: 'linear-gradient(135deg, var(--emerald-safe), #059669)',
-                  border: 'none', color: '#fff', borderRadius: '8px', fontSize: '0.78rem',
-                  fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                  boxShadow: '0 4px 14px rgba(4,120,87,0.35)'
-                }}
-              >
-                <CheckCircle2 size={16} /> Xác nhận xe trống 100% & Bàn giao
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
