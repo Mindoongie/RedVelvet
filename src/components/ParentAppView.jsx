@@ -763,6 +763,24 @@ export default function ParentAppView({ simulations }) {
                 </select>
               </div>
 
+              {capturedDescriptors.length < 1 && (
+                <button 
+                  type="button"
+                  onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                  className="btn-secondary"
+                  style={{
+                    width: '100%', justifyContent: 'center',
+                    fontSize: '0.75rem', padding: '8px',
+                    background: 'rgba(56,189,248,0.1)',
+                    borderColor: 'rgba(56,189,248,0.4)',
+                    color: 'var(--accent-cyan)',
+                    cursor: 'pointer', fontWeight: 700
+                  }}
+                >
+                  <Upload size={14} /> 📁 Chọn ảnh từ máy để nạp Face ID
+                </button>
+              )}
+
               <button 
                 type="submit" 
                 className="btn-primary" 
@@ -770,7 +788,7 @@ export default function ParentAppView({ simulations }) {
                 style={{ 
                   width: '100%', justifyContent: 'center', 
                   fontSize: '0.8rem', padding: '8px', 
-                  marginTop: '4px',
+                  marginTop: '2px',
                   opacity: capturedDescriptors.length < 1 ? 0.6 : 1 
                 }}
               >
