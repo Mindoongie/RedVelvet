@@ -1,149 +1,273 @@
-# EduSafe Bus - Nền Tảng Giám Sát An Toàn Xe Đưa Đón Học Sinh Thông Minh
+# EduSafe Bus - Nền Tảng Giám Sát An Toàn Xe Đưa Đón Học Sinh Ứng Dụng AI Thông Minh
+
+<div align="center">
 
 ![EduSafe Bus Logo](/public/edusafe_logo.png)
 
-> **Dự án Khởi nghiệp Công nghệ Giáo dục & An toàn Giao thông**  
-> Hệ thống tích hợp Trí tuệ nhân tạo (AI) giúp giải quyết triệt để rủi ro bỏ quên học sinh trên xe, giám sát sự mất tập trung/ngủ gật của tài xế và cảnh báo chệch lộ trình thời gian thực.
+[![React](https://img.shields.io/badge/React-19.x-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.14+-FF6F00?logo=tensorflow&logoColor=white)](https://www.tensorflow.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7.x-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.x-FF6600?logo=rabbitmq&logoColor=white)](https://www.rabbitmq.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> ⚡ **Lưu ý nút Demo (Ngủ Gật / Bỏ Quên / Lệch Tuyến)**: Các nút mô phỏng AI chỉ hiện ở đúng vai trò cần thiết — Giáo Viên sẽ không thấy nút nào vì không liên quan đến các tình huống đó.
+*Dự án Khởi nghiệp Đổi mới Sáng tạo & Công nghệ An toàn Giao thông Học đường 2026*
+
+</div>
 
 ---
 
-## 📌 1. Danh Sách Tài Khoản Đăng Nhập Phân Quyền (Credentials)
+## 📑 Mục Lục (Table of Contents)
 
-Hệ thống tự động nhận diện vai trò dựa trên email khi đăng nhập và chuyển thẳng tới giao diện chuyên biệt của người đó:
+1. [Giới Thiệu & Bài Toán Giải Quyết](#-1-giới-thiệu--bài-toán-giải-quyết)
+2. [Bộ Công Nghệ Cốt Lõi (Tech Stack)](#-2-bộ-công-nghệ-cốt-lõi-tech-stack)
+3. [Cấu Trúc Thư Mục Dự Án (Project Structure)](#-3-cấu-trúc-thư-mục-dự-án-project-structure)
+4. [Pipeline Hoạt Động Cốt Lõi Của Hệ Thống](#-4-pipeline-hoạt-động-cốt-lõi-của-hệ-thống)
+   - [4.1. Pipeline Điểm Danh Sinh Trắc Học AI Edge (Face Recognition)](#41-pipeline-điểm-danh-sinh-trắc-học-ai-edge-face-recognition)
+   - [4.2. Pipeline Giám Sát Tài Xế & Cảnh Báo Ngủ Gật (Drowsiness Engine)](#42-pipeline-giám-sát-tài-xế--cảnh-báo-ngủ-gật-drowsiness-engine)
+   - [4.3. Pipeline Định Vị GPS & Thuật Toán Lệch Tuyến Haversine](#43-pipeline-định-vị-gps--thuật-toán-lệch-tuyến-haversine)
+   - [4.4. Pipeline Điều Phối Báo Động Khẩn Cấp & Ma Trận SOS](#44-pipeline-điều-phối-báo-động-khẩn-cấp--ma-trận-sos)
+5. [Danh Sách Tài Khoản Phân Quyền (Demo Credentials)](#-5-danh-sách-tài-khoản-phân-quyền-demo-credentials)
+6. [Cấu Hình Môi Trường & Hướng Dẫn Cài Đặt (Setup & Run)](#-6-cấu-hình-môi-trường--hướng-dẫn-cài-đặt-setup--run)
+   - [6.1. Chạy Môi Trường Local Development](#61-chạy-môi-trường-local-development)
+   - [6.2. Đóng Gói & Chạy Bằng Docker Compose](#62-đóng-gói--chạy-bằng-docker-compose)
+   - [6.3. Cấu Hình Biến Môi Trường (.env)](#63-cấu-hình-biến-môi-trường-env)
+7. [Quy Trình Triển Khai Sản Phẩm (Production Deployment)](#-7-quy-trình-triển-khai-sản-phẩm-production-deployment)
+8. [Tác Giả & Bản Quyền (License)](#-8-tác-giả--bản-quyền-license)
 
-| Phân Quyền (Role) | Email Đăng Nhập | Mật Khẩu | Mô Tả Giao Diện |
+---
+
+## 🎯 1. Giới Thiệu & Bài Toán Giải Quyết
+
+**EduSafe Bus** là nền tảng công nghệ toàn diện ứng dụng **Trí tuệ nhân tạo (AI Edge)** và **Internet vạn vật (IoT)** nhằm xây dựng *"Lá chắn an toàn 4 lớp"* giải quyết triệt để 3 nỗi đau nhức nhối trong hoạt động đưa đón học sinh:
+
+1. **Rủi ro bỏ quên học sinh trên xe:** Tự động đối soát danh sách đón/trả bằng nhận diện khuôn mặt kết hợp quy trình bắt buộc rà soát khoang xe cuối hành trình (*End-trip Cabin Sweep*).
+2. **Tai nạn do tài xế mất tập trung hoặc ngủ gật:** Lõi AI giám sát mắt (`EAR`), ngáp (`MAR`), gật đầu (`Pitch`) và tổng hợp điểm rủi ro theo mô hình *Noisy-OR Bayesian Fusion*, phát còi hú cảnh báo ngay tại cabin.
+3. **Xe chệch lộ trình, trễ tuyến:** Thuật toán chiếu vector khoảng cách *Haversine GPS* cảnh báo lập tức khi xe lệch tuyến > 100m, cho phép phụ huynh và nhà trường phát lệnh khẩn cấp tức thời.
+
+---
+
+## 💻 2. Bộ Công Nghệ Cốt Lõi (Tech Stack)
+
+| Lớp Công Nghệ | Thành Phần Sử Dụng | Vai Trò Kỹ Thuật |
+| :--- | :--- | :--- |
+| **Frontend UI/UX** | React 19, Vite 8, Vanilla CSS3 Glassmorphism, Lucide Icons | Giao diện tương phản cao Dark Mode, thời gian phản hồi siêu tốc, tương thích đa thiết bị |
+| **Edge AI & Computer Vision** | `face-api.js`, Python 3.12, PyTorch / TensorFlow, OpenCV | Trích xuất Vector 128-D nhận diện khuôn mặt và tính toán chỉ số sinh trắc học ngay tại Client |
+| **Backend & Microservices** | Node.js / Express, Python FastAPI, WebSockets (Socket.io) | Xử lý nghiệp vụ, API RESTful hiệu năng cao và kênh truyền nhận dữ liệu thời gian thực |
+| **Message Broker & Queue** | RabbitMQ, Redis Pub/Sub | Điều phối hàng đợi sự kiện SOS, phân phối tin nhắn khẩn cấp có độ trễ < 200ms |
+| **Database & Caching** | PostgreSQL 16, Redis Cache | Lưu trữ dữ liệu quan hệ có cấu trúc và cache tọa độ GPS, session người dùng |
+| **DevOps & Container** | Docker Multi-stage, Docker Compose, Nginx, GitHub Actions CI | Đóng gói ứng dụng tiêu chuẩn, tối ưu dung lượng ảnh và tự động hóa kiểm thử build |
+
+---
+
+## 📂 3. Cấu Trúc Thư Mục Dự Án (Project Structure)
+
+```text
+RedVelvet/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                      # GitHub Actions tự động kiểm thử Build CI
+├── public/                             # Tài nguyên tĩnh phục vụ Nginx & Web
+│   ├── models/                         # Trọng số mô hình AI face-api.js (SSD Mobilenet, Landmark)
+│   ├── edusafe_logo.png                # Logo nhận diện thương hiệu EduSafe Bus
+│   ├── erd.png                         # Sơ đồ quan hệ thực thể cơ sở dữ liệu (ERD)
+│   ├── system_architecture.png         # Sơ đồ kiến trúc vi dịch vụ hệ thống
+│   ├── user_flow.png                   # Sơ đồ luồng tương tác người dùng
+│   └── face-api.min.js                 # Thư viện AI trích xuất vector khuôn mặt
+├── src/
+│   ├── assets/                         # Ảnh biểu tượng và hình động đồ họa
+│   ├── components/                     # Các module giao diện theo phân quyền (Role Views)
+│   │   ├── AdminDashboard.jsx          # Dashboard điều hành BGH, KPI an toàn & Live GPS Stream
+│   │   ├── DriverTabletView.jsx        # Cabin tài xế: AI điểm danh, Lõi chống ngủ gật & Rà soát cuối xe
+│   │   ├── TeacherMonitorView.jsx      # Giám sát tại trường, điểm danh từ xa & xác nhận thủ công (Fallback)
+│   │   ├── ParentAppView.jsx           # App Phụ huynh: Live GPS tracking, cảnh báo lệch tuyến & SOS
+│   │   ├── GlobalEmergencyBanner.jsx   # Thanh cảnh báo khẩn cấp đồng bộ thời gian thực toàn hệ thống
+│   │   ├── SosModal.jsx                # Ma trận nút bấm SOS khẩn cấp đa kênh (113, 114, 115, BGH, Phụ huynh)
+│   │   ├── LiveMapSimulator.jsx        # Bản đồ mô phỏng tọa độ vệ tinh & thuật toán lệch tuyến Haversine
+│   │   ├── CameraAiOverlay.jsx         # Khung quét camera nhận diện khuôn mặt học sinh
+│   │   ├── AIDevPanel.jsx              # Bảng kỹ thuật hiển thị cấu trúc JSON & AI specs cho BGK
+│   │   ├── LoginScreen.jsx             # Màn hình đăng nhập tự động nhận diện phân quyền qua Email
+│   │   └── Navbar.jsx                  # Thanh tiêu đề, thông tin phiên đăng nhập, đồng hồ & còi SOS
+│   ├── utils/                          # Lõi thuật toán và động cơ xử lý logic
+│   │   ├── alertEngine.js              # Lõi điều phối cảnh báo khẩn cấp (BroadcastChannel & Web Audio)
+│   │   ├── drowsinessEngine.js         # Lõi phát hiện ngủ gật (EAR, MAR, Pitch & Noisy-OR Bayesian Fusion)
+│   │   ├── faceEngine.js               # Lõi trích xuất 128-D descriptor, so khớp khoảng cách Euclid
+│   │   └── mapTracking.js              # Lõi tính toán khoảng cách Haversine & bộ lọc làm mượt SMA GPS
+│   ├── App.jsx                         # Component gốc quản lý Role Session & Đồng bộ Simulation
+│   ├── App.css                         # Định dạng bố cục tổng thể
+│   ├── index.css                       # Design System chuẩn: Mã màu, Typography Be Vietnam Pro & Reset CSS
+│   └── main.jsx                        # Điểm khởi chạy ứng dụng React DOM
+├── BAO_CAO_DU_AN_MVP.md                # Báo cáo kỹ thuật chi tiết phục vụ vòng chấm điểm chung kết
+├── KICH_BAN_QUAY_VIDEO_DEMO.md         # Kịch bản quay video thuyết trình demo sản phẩm từng giây
+├── Dockerfile                          # Multi-stage Dockerfile tối ưu hóa kích thước image
+├── docker-compose.yml                  # Cấu hình khởi chạy nhanh container dịch vụ
+├── nginx.conf                          # Cấu hình máy chủ web Nginx phục vụ SPA và gzip caching
+├── netlify.toml                        # Cấu hình tự động triển khai liên tục (CI/CD) trên Netlify
+├── package.json                        # Khai báo gói thư viện và script quản lý dự án
+└── vite.config.js                      # Cấu hình plugin React cho trình biên dịch Vite
+```
+
+---
+
+## ⚡ 4. Pipeline Hoạt Động Cốt Lõi Của Hệ Thống
+
+```mermaid
+graph TD
+    subgraph S1["1. AI Edge Face Recognition"]
+        A1["Camera Cabin Xe"] --> A2["SSD MobileNetV1 Detector"]
+        A2 --> A3["68 Face Landmarks"]
+        A3 --> A4["128-D Vector Embeddings"]
+        A4 --> A5["So khớp khoảng cách Euclid < 0.55"]
+        A5 --> A6["Cập nhật Roster: on_bus / alighted"]
+    end
+
+    subgraph S2["2. Drowsiness Monitoring Engine"]
+        B1["Camera Giám Sát Tài Xế"] --> B2["Chỉ số EAR < 0.19 (Nhắm mắt)"]
+        B1 --> B3["Chỉ số MAR > 0.55 (Ngáp)"]
+        B1 --> B4["Head Pitch > 20° (Gật đầu)"]
+        B2 & B3 & B4 --> B5["Noisy-OR Bayesian Fusion"]
+        B5 --> B6["Còi hú báo động trong Cabin (EAR < 0.21 > 2.5s)"]
+    end
+
+    subgraph S3["3. GPS & Haversine Deviation"]
+        C1["GPS Telemetry Real-time"] --> C2["Bộ lọc trung bình trượt SMA"]
+        C2 --> C3["Chiếu Vector lên Waypoints lộ trình"]
+        C3 --> C4{"Độ lệch > 100m?"}
+        C4 -- Có --> C5["Kích hoạt Cảnh báo chệch lộ trình"]
+    end
+
+    subgraph S4["4. Real-time Emergency & SOS Matrix"]
+        D1["Nút SOS / Cảnh báo Phụ huynh"] --> D2["RabbitMQ Priority Queue"]
+        D2 --> D3["WebSocket Broadcast (< 200ms)"]
+        D2 --> D4["SMS Gateway (Twilio / 115 / 113)"]
+        D3 --> D5["Global Emergency Banner trên toàn bộ App"]
+    end
+```
+
+### 4.1. Pipeline Điểm Danh Sinh Trắc Học AI Edge (Face Recognition)
+1. Luồng video từ camera xe bus được xử lý trực tiếp trên trình duyệt Client bằng WebAssembly/WebGL.
+2. Trích xuất đặc trưng khuôn mặt thành mảng vector 128 chiều (`128-D descriptor`).
+3. Đối khớp vector với cơ sở dữ liệu học sinh đã đăng ký qua khoảng cách Euclid (Euclidean Distance với threshold chuẩn `0.55`).
+4. Tự động chuyển trạng thái học sinh thành `on_bus` (lên xe) hoặc `alighted` (xuống trạm).
+5. **Cơ chế xác nhận thủ công (Manual Fallback):** Cho phép giáo viên xác nhận thủ công nếu học sinh đeo khẩu trang hoặc điều kiện ánh sáng yếu.
+
+### 4.2. Pipeline Giám Sát Tài Xế & Cảnh Báo Ngủ Gật (Drowsiness Engine)
+* **EAR (Eye Aspect Ratio):** Tính toán độ mở mắt; áp dụng vùng đệm Hysteresis (`0.19 - 0.23`) chống rung tín hiệu.
+* **MAR (Mouth Aspect Ratio):** Nhận diện hành vi ngáp mệt mỏi khi MAR `> 0.55` kéo dài quá `1.5s`.
+* **Head Pitch:** Theo dõi góc nghiêng đầu để phát hiện trạng thái gục ngã/mất tỉnh táo.
+* **Noisy-OR Bayesian Fusion:** Kết hợp các yếu tố nguy cơ để tính toán điểm rủi ro tổng hợp (*Risk Score*). Khi tài xế nhắm mắt quá `2.5s`, còi hú báo động âm thanh lập tức kích hoạt trong cabin.
+
+### 4.3. Pipeline Định Vị GPS & Thuật Toán Lệch Tuyến Haversine
+* Thu thập tọa độ GPS với chu kỳ `1000ms`, áp dụng bộ lọc *Simple Moving Average (SMA)* để triệt tiêu sai số GPS.
+* Chiếu vector vuông góc từ vị trí hiện tại của xe đến đoạn thẳng nối các Waypoints chuẩn.
+* Nếu khoảng cách sai lệch thực tế lớn hơn `100m` (hoặc `150m`), hệ thống tự động kích hoạt cảnh báo chệch tuyến gửi tới phụ huynh và nhà trường.
+
+### 4.4. Pipeline Điều Phối Báo Động Khẩn Cấp & Ma Trận SOS
+* Hỗ trợ 4 kịch bản khẩn cấp: *Tai nạn giao thông, Hỏa hoạn/Cháy xe, Cấp cứu y tế/Sốc nhiệt, Kẻ xâm nhập/Uy hiếp*.
+* Khi kích hoạt, tín hiệu được đẩy vào hàng đợi ưu tiên cao qua **RabbitMQ** và **WebSocket Broadcast**, hiển thị thanh **Global Emergency Banner** nhấp nháy đỏ trên toàn bộ các tài khoản đang đăng nhập với độ trễ `< 200ms`.
+
+---
+
+## 🔑 5. Danh Sách Tài Khoản Phân Quyền (Demo Credentials)
+
+Hệ thống hỗ trợ cơ chế tự động nhận diện phân quyền thông minh dựa trên địa chỉ Email:
+
+| Phân Quyền (Role) | Email Đăng Nhập | Mật Khẩu | Mục Đích Trải Nghiệm |
 | :--- | :--- | :--- | :--- |
-| **Admin Trường** | `admin@edusafe.edu.vn` | `admin123` | Dashboard tổng quan đội xe, chỉ số an toàn AI, bản đồ GPS & báo cáo vi phạm |
-| **Lái Xe Bus** | `driver.hung@edusafe.edu.vn` | `driver123` | Màn hình Tablet cabin giám sát mắt ngủ gật (EAR), rà soát khoang xe (End-trip) |
-| **Giáo Viên Giám Sát** | `teacher.thu@edusafe.edu.vn` | `teacher123` | Khung quét điểm danh khuôn mặt học sinh lúc đón/trả trạm |
-| **Phụ Huynh** | `parent.chi@edusafe.edu.vn` | `parent123` | Màn hình Mobile theo dõi vị trí xe real-time, ETA và nhận thông báo con lên/xuống xe |
+| **Quản Trị Viên Nhà Trường** | `admin@edusafe.edu.vn` | `admin123` | Giám sát KPI an toàn đội xe, live map GPS, nhật ký AI system và kích hoạt SOS |
+| **Lái Xe Bus (Tablet Cabin)** | `driver.hung@edusafe.edu.vn` | `driver123` | Điểm danh camera AI, theo dõi chỉ số ngủ gật EAR/MAR, còi báo động và rà soát cuối xe |
+| **Giáo Viên Giám Sát** | `teacher.thu@edusafe.edu.vn` | `teacher123` | Theo dõi danh sách điểm danh từ xa, xác nhận thủ công (Manual Fallback) khi quét lỗi |
+| **Phụ Huynh Học Sinh** | `parent.chi@edusafe.edu.vn` | `parent123` | Theo dõi GPS xe thời gian thực, nhận cảnh báo xe lệch tuyến > 280m, gửi cảnh báo khẩn cấp |
 
 ---
 
-## 🛠️ 2. Hướng Dẫn Cài Đặt & Chạy Chế Độ Development
+## ⚙️ 6. Cấu Hình Môi Trường & Hướng Dẫn Cài Đặt (Setup & Run)
 
-### Yêu cầu môi trường:
-- **Node.js**: `v18.0.0` trở lên (Khuyến nghị `v20.x` hoặc `v24.x`)
-- **NPM**: `v9.x` trở lên
+### 6.1. Chạy Môi Trường Local Development
 
-### Các bước thực hiện:
+**Yêu cầu hệ thống:**
+* **Node.js:** Phiên bản `18.x` trở lên (Khuyến nghị `Node.js 20 LTS` hoặc `Node.js 22 LTS`)
+* **NPM:** `v9.x` hoặc `v10.x`
 
-1. **Cài đặt thư viện phụ thuộc (Dependencies)**:
-   ```bash
-   npm install
-   ```
+**Các bước thực hiện:**
+```bash
+# 1. Clone mã nguồn dự án
+git clone https://github.com/Mindoongie/RedVelvet.git
+cd RedVelvet
 
-2. **Chạy server phát triển (Development Mode)**:
-   ```bash
-   npm run dev
-   ```
-   Ứng dụng sẽ tự động chạy tại địa chỉ: `http://localhost:5173/`
+# 2. Cài đặt các gói thư viện phụ thuộc
+npm install
 
-3. **Kiểm tra Build Production bundle**:
+# 3. Khởi chạy máy chủ phát triển (Vite Dev Server)
+npm run dev
+```
+Truy cập ứng dụng tại: `http://localhost:5173/`
+
+### 6.2. Đóng Gói & Chạy Bằng Docker Compose
+
+Dự án hỗ trợ đóng gói Production bằng Docker Multi-stage và Nginx:
+
+```bash
+# Xây dựng image và khởi chạy container chạy ngầm
+docker-compose up -d --build
+
+# Kiểm tra trạng thái hoạt động của container
+docker-compose ps
+
+# Xem nhật ký hoạt động (logs)
+docker-compose logs -f
+
+# Dừng container khi không sử dụng
+docker-compose down
+```
+Truy cập ứng dụng qua Nginx tại cổng: `http://localhost:8080` (hoặc `http://localhost:5173`)
+
+### 6.3. Cấu Hình Biến Môi Trường (.env)
+
+Tạo file `.env` tại thư mục gốc của dự án dựa trên mẫu dưới đây:
+
+```env
+# ─── Cấu hình Ứng Dụng Client ─────────────────────────────────
+VITE_APP_TITLE=EduSafe Bus Platform
+VITE_APP_ENV=production
+VITE_API_BASE_URL=https://api.edusafe.edu.vn/v1
+VITE_WS_SERVER_URL=wss://ws.edusafe.edu.vn
+
+# ─── Cấu hình Ngưỡng Thuật Toán AI Sinh Trắc Học ───────────────
+VITE_FACE_MATCH_THRESHOLD=0.55
+VITE_DROWSINESS_EAR_THRESHOLD=0.19
+VITE_DROWSINESS_EAR_RECOVERY=0.23
+VITE_DROWSINESS_MAR_THRESHOLD=0.55
+VITE_GPS_DEVIATION_METERS=100
+
+# ─── Cấu hình Tọa Độ Bản Đồ Mặc Định (TP. Hồ Chí Minh) ─────────
+VITE_MAP_DEFAULT_LAT=10.7769
+VITE_MAP_DEFAULT_LNG=106.7009
+VITE_MAP_ZOOM_LEVEL=14
+```
+
+---
+
+## 🌐 7. Quy Trình Triển Khai Sản Phẩm (Production Deployment)
+
+### Triển khai tự động trên Netlify / Vercel (CI/CD)
+1. Khi có commit mới được `git push` lên nhánh `main`, hệ thống Netlify/Vercel sẽ tự động kích hoạt tiến trình build:
    ```bash
    npm run build
    ```
+2. Thư mục xuất bản `dist/` được tự động phân phối qua mạng lưới CDN toàn cầu với chứng chỉ bảo mật HTTPS miễn phí.
+3. Để xem phiên bản cập nhật mới nhất, người dùng chỉ cần nhấn **`Ctrl + F5`** trên trình duyệt để làm mới bộ nhớ cache.
 
 ---
 
-## 🐳 3. Hướng Dẫn Đóng Gói & Triển Khai Với Docker
+## 👥 8. Tác Giả & Bản Quyền (License)
 
-Dự án đã được cấu hình sẵn **Multi-stage Dockerfile** kết hợp Nginx để tối ưu hóa hiệu năng, giảm dung lượng image và bảo mật cho môi trường Production.
-
-### Sử dụng Docker Compose (Khuyến nghị)
-Chạy lệnh duy nhất để build và khởi chạy ứng dụng:
-```bash
-docker-compose up -d --build
-```
-- **Cổng truy cập**: 
-  - `http://localhost:8080` (Hoặc `http://localhost:5173`)
-- **Kiểm tra trạng thái container**:
-  ```bash
-  docker-compose ps
-  ```
-- **Dừng ứng dụng**:
-  ```bash
-  docker-compose down
-  ```
-
----
-
-## 🌐 4. Publish Lên Internet (Để Mọi Người Dùng)
-
-Vì web chỉ có **giao diện tĩnh + đăng nhập client-side**, không cần server riêng. Tất cả mọi người (Admin, Lái xe, Giáo viên, Phụ huynh) dùng **cùng một URL** rồi đăng nhập bằng tài khoản của role mình.
-
-### Cách 1: Netlify (Nhanh nhất — Miễn phí, HTTPS tự động)
-
-**Bước 1:** Đẩy code lên GitHub:
-```bash
-git add .
-git commit -m "feat: EduSafe Bus web UI"
-git push origin cheese
-```
-
-**Bước 2:** Truy cập [netlify.com](https://netlify.com) → Đăng nhập → **"Add new site" → "Import from Git"**
-
-**Bước 3:** Chọn repo `RedVelvet`, nhánh `cheese`. Netlify tự đọc `netlify.toml` và cấu hình:
-- Build command: `npm run build`
-- Publish directory: `dist`
-
-**Bước 4:** Nhấn **Deploy** → Sau ~2 phút nhận URL dạng `https://edusafe-bus.netlify.app`
-
-**Bước 5:** Gửi link đó cho tất cả thành viên. Mỗi người đăng nhập bằng email/mật khẩu của role mình.
-
-> 🔒 Netlify hỗ trợ **HTTPS miễn phí** và **custom domain** nếu nhóm có domain riêng.
-
----
-
-### Cách 2: VPS / Cloud Server (Khi cần backend AI ghép vào)
-
-Khi nhóm đã làm xong phần AI và cần deploy server thật:
-
-```bash
-# Trên VPS (Ubuntu), cài Docker + Docker Compose
-curl -fsSL https://get.docker.com | sh
-apt install docker-compose -y
-
-# Clone repo và chạy
-git clone <repo-url>
-cd RedVelvet
-docker-compose up -d --build
-```
-
-Truy cập qua IP hoặc domain của VPS tại cổng `8080`.
-
----
-
-Giao diện Frontend đã được thiết kế sẵn các **UI Slots, Live WebCam Handlers, WebSocket Subscriber Payload Schemas** đúng theo tài liệu kỹ thuật dự án:
-
-1. **Nhận diện khuôn mặt (`face-api.js`)**:
-   - **Tệp giao diện**: `src/components/TeacherMonitorView.jsx` & `src/components/CameraAiOverlay.jsx`
-   - **Định dạng Descriptor**: Vector 128 chiều (`128-D descriptor`), khoảng cách Euclid threshold `0.60`.
-   - **Trạng thái Roster**: `boarded` (đã lên), `alighted` (đã xuống), `wrong_bus` (lên nhầm xe).
-
-2. **Cảnh báo ngủ gật tài xế (`Inferensys / ai-driver-safety`)**:
-   - **Tệp giao diện**: `src/components/DriverTabletView.jsx`
-   - **Chỉ số Biometrics**:
-     - `EAR` (Eye Aspect Ratio): Ngưỡng `< 0.20` kích hoạt chuông cảnh báo nhắm mắt > 2.5s.
-     - `MAR` (Mouth Aspect Ratio): Ngưỡng `> 0.50` phát hiện hành vi ngáp mệt mỏi.
-     - `Noisy-OR Fusion`: Thuật toán mạng Bayes tính toán tổng hợp điểm rủi ro cabin.
-
-3. **Định vị & Lệch tuyến Haversine (`bustracker`)**:
-   - **Tệp giao diện**: `src/components/LiveMapSimulator.jsx`
-   - **Thuật toán**: Chiếu vector vuông góc từ GPS lên lộ trình chuẩn. Ngưỡng cảnh báo lệch `> 150m`.
-
-4. **Ma trận Nút bấm SOS Khẩn Cấp (`EmergencyDispatcher`)**:
-   - **Tệp giao diện**: `src/components/SosModal.jsx`
-   - **Luồng xử lý**: Đẩy message vào hàng đợi RabbitMQ, kích hoạt đồng thời tin nhắn SMS 113/114/115, Push Notification và WebSocket đến BGH & Phụ huynh `< 1s`.
-
-> 💡 **Mẹo**: Nhấp vào nút **`</> AI Specs`** trên thanh tiêu đề Navbar trong ứng dụng để xem chi tiết mã nguồn mẫu tích hợp dành cho AI Backend.
-
----
-
-## 📑 5. Đóng Góp Dự Án & Bản Quyền
-
-- **Tác giả dự án**: Đội ngũ Khởi nghiệp EduSafe Bus
-- **Công nghệ**: React, Vite, Lucide Icons, Nginx, Docker.
-- **Bản quyền**: &copy; 2026 EduSafe Bus Platform. All rights reserved.
+* **Đơn vị phát triển:** Đội ngũ Khởi nghiệp EduSafe Bus – Cuộc thi Khởi nghiệp Sinh viên 2026
+* **Tài liệu thuyết trình:** Xem chi tiết tại [KICH_BAN_QUAY_VIDEO_DEMO.md](./KICH_BAN_QUAY_VIDEO_DEMO.md)
+* **Báo cáo kỹ thuật:** Xem chi tiết tại [BAO_CAO_DU_AN_MVP.md](./BAO_CAO_DU_AN_MVP.md)
+* **Giấy phép bản quyền:** Phát hành theo giấy phép [MIT License](LICENSE). &copy; 2026 EduSafe Bus Platform. All rights reserved.
