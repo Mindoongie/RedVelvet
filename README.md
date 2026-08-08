@@ -102,8 +102,6 @@ RedVelvet/
 │   ├── App.css                         # Định dạng bố cục tổng thể
 │   ├── index.css                       # Design System chuẩn: Mã màu, Typography Be Vietnam Pro & Reset CSS
 │   └── main.jsx                        # Điểm khởi chạy ứng dụng React DOM
-├── BAO_CAO_DU_AN_MVP.md                # Báo cáo kỹ thuật chi tiết phục vụ vòng chấm điểm chung kết
-├── KICH_BAN_QUAY_VIDEO_DEMO.md         # Kịch bản quay video thuyết trình demo sản phẩm từng giây
 ├── Dockerfile                          # Multi-stage Dockerfile tối ưu hóa kích thước image
 ├── docker-compose.yml                  # Cấu hình khởi chạy nhanh container dịch vụ
 ├── nginx.conf                          # Cấu hình máy chủ web Nginx phục vụ SPA và gzip caching
@@ -235,6 +233,4 @@ VITE_MAP_ZOOM_LEVEL=14
 ## 👥 8. Tác Giả & Bản Quyền (License)
 
 * **Đơn vị phát triển:** Đội ngũ Khởi nghiệp EduSafe Bus – Cuộc thi Khởi nghiệp Sinh viên 2026
-* **Tài liệu thuyết trình:** Xem chi tiết tại [KICH_BAN_QUAY_VIDEO_DEMO.md](./KICH_BAN_QUAY_VIDEO_DEMO.md)
-* **Báo cáo kỹ thuật:** Xem chi tiết tại [BAO_CAO_DU_AN_MVP.md](./BAO_CAO_DU_AN_MVP.md)
 * **Giấy phép bản quyền:** Phát hành theo giấy phép [MIT License](LICENSE). &copy; 2026 EduSafe Bus Platform. All rights reserved.
