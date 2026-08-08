@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShieldAlert, AlertTriangle, Phone, Flame, Stethoscope, UserX, Send, CheckCircle2, X } from 'lucide-react';
+import { dispatchAlert } from '../utils/alertEngine';
 
 export default function SosModal({ isOpen, onClose }) {
   const [selectedIncident, setSelectedIncident] = React.useState('traffic_accident');
@@ -9,21 +10,32 @@ export default function SosModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   const incidents = [
-    { id: 'traffic_accident', label: 'Tai nạn giao thông', icon: AlertTriangle, color: '#ef4444', channels: ['115 (Cấp cứu)', '113 (Công an)', 'Push Nhà Trường', 'SMS Phụ Huynh'] },
-    { id: 'fire', label: 'Hoả hoạn / Cháy xe', icon: Flame, color: '#f97316', channels: ['114 (Cứu Hỏa)', 'Push Nhà Trường', 'BroadCast Xe'] },
-    { id: 'medical', label: 'Cấp cứu y tế / sốc nhiệt', icon: Stethoscope, color: '#06b6d4', channels: ['115 (Cấp cứu)', 'Bác sĩ Trường', 'SMS Phụ Huynh'] },
-    { id: 'intruder', label: 'Kẻ xâm nhập / uy hiếp', icon: UserX, color: '#a855f7', channels: ['113 (Cảnh Sát)', 'Cảnh báo Ngầm BGH', 'Định vị khẩn'] }
+    { id: 'traffic_accident', label: 'Tai nạn giao thông', icon: AlertTriangle, color: '#ef4444', channels: ['115 (Cấp cứu)', '113 (Công an)', 'BGH Nhà Trường', 'SMS Phụ Huynh'] },
+    { id: 'fire', label: 'Hoả hoạn / Cháy xe', icon: Flame, color: '#f97316', channels: ['114 (Cứu Hỏa)', 'BGH Nhà Trường', 'Tài xế & Tablet Xe', 'Phụ Huynh'] },
+    { id: 'medical', label: 'Cấp cứu y tế / sốc nhiệt', icon: Stethoscope, color: '#06b6d4', channels: ['115 (Cấp cứu)', 'Bác sĩ Trường', 'Tài Xế', 'SMS Phụ Huynh'] },
+    { id: 'intruder', label: 'Kẻ xâm nhập / uy hiếp', icon: UserX, color: '#a855f7', channels: ['113 (Cảnh Sát)', 'Cảnh báo Ngầm BGH', 'Tài xế', 'Định vị khẩn'] }
   ];
 
   const handleSendSos = () => {
     setIsDispatched(true);
     const incidentInfo = incidents.find(i => i.id === selectedIncident);
 
+    dispatchAlert({
+      source: 'Hệ thống Báo Động SOS Khẩn Cấp (Xe BUS-01)',
+      senderRole: 'driver',
+      type: 'sos',
+      title: `🚨 BÁO ĐỘNG SOS KHẨN CẤP: ${incidentInfo.label.toUpperCase()}`,
+      message: `Đã kích hoạt điều phối cứu hộ đa kênh: ${incidentInfo.channels.join(' · ')}. Tọa độ GPS xe: 10.7769° N, 106.7009° E.`,
+      busId: 'BUS-01',
+      severity: 'critical',
+      channels: incidentInfo.channels
+    });
+
     setDispatchLogs([
       `[RabbitMQ Queue] Pushed SOS Event: ${incidentInfo.label}`,
       `[Routing Matrix API] Mapped channels to 4 targets in < 200ms`,
       `[SMS Gateway] Sent emergency alert SMS to Hotline 115 & 113`,
-      `[WebSocket] Broadcasted emergency beacon to Admin & Parent devices`
+      `[WebSocket] Broadcasted emergency beacon to Admin, Teacher, Driver & Parent devices`
     ]);
   };
 

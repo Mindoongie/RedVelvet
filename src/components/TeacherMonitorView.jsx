@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   School, ShieldAlert, Camera, CheckCircle2, XCircle, AlertTriangle,
   Clock, Users, UserCheck, PenLine, RefreshCw, MapPin, Bell
 } from 'lucide-react';
 import LiveMapSimulator from './LiveMapSimulator';
 import { getRoster } from '../utils/faceEngine';
+import { getActiveAlerts, subscribeToAlerts } from '../utils/alertEngine';
 
 // ─── Dữ liệu học sinh ban đầu ────────────────────────────────────────────────
 // status:
@@ -60,13 +61,22 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
   const [students, setStudents] = React.useState(getLiveStudents);
   const [confirmTarget, setConfirmTarget] = React.useState(null); // student.id đang cần xác nhận
   const [activeTab, setActiveTab] = React.useState('attendance'); // 'attendance' | 'map'
+  const [liveAlerts, setLiveAlerts] = React.useState([]);
 
   React.useEffect(() => {
+    setLiveAlerts(getActiveAlerts());
+    const unsub = subscribeToAlerts((updated) => {
+      setLiveAlerts(updated);
+    });
+
     const handleStorage = () => {
       setStudents(getLiveStudents());
     };
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    return () => {
+      unsub();
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
   // Điểm danh thủ công
@@ -139,8 +149,16 @@ export default function TeacherMonitorView({ simulations, openSosModal }) {
         </div>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {/* Cảnh báo thời gian thực từ Phụ Huynh & SOS */}
+          {liveAlerts.filter(a => a.status === 'active').map(alert => (
+            <div key={alert.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(239,68,68,0.2)', border: '1px solid #ef4444', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', color: '#f87171', animation: 'pulse-danger 2s infinite' }}>
+              <Bell size={14} />
+              <span><strong>{alert.source}:</strong> {alert.title}</span>
+            </div>
+          ))}
+
           {/* Cảnh báo từ xe nếu admin bật simulation */}
-          {(simulations.drowsiness || simulations.leftBehind || simulations.routeDev) && (
+          {(simulations.drowsiness || simulations.leftBehind || simulations.routeDev) && liveAlerts.filter(a => a.status === 'active').length === 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(239,68,68,0.2)', border: '1px solid #ef4444', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', color: '#f87171' }}>
               <Bell size={14} />
               <span>

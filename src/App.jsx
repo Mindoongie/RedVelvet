@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import LoginScreen from './components/LoginScreen';
 import AdminDashboard from './components/AdminDashboard';
@@ -7,6 +7,8 @@ import TeacherMonitorView from './components/TeacherMonitorView';
 import ParentAppView from './components/ParentAppView';
 import AIDevPanel from './components/AIDevPanel';
 import SosModal from './components/SosModal';
+import GlobalEmergencyBanner from './components/GlobalEmergencyBanner';
+import { getSharedSimulations, saveSharedSimulations } from './utils/alertEngine';
 import { Sparkles } from 'lucide-react';
 
 export default function App() {
@@ -14,15 +16,27 @@ export default function App() {
   const [devDrawerOpen, setDevDrawerOpen] = useState(false);
   const [sosModalOpen, setSosModalOpen] = useState(false);
 
-  // Interactive AI simulation states
-  const [simulations, setSimulations] = useState({
-    drowsiness: false,
-    leftBehind: false,
-    routeDev: false
-  });
+  // Interactive AI simulation states synced across tabs & components
+  const [simulations, setSimulations] = useState(() => getSharedSimulations());
+
+  useEffect(() => {
+    const handleSimChange = () => {
+      setSimulations(getSharedSimulations());
+    };
+    window.addEventListener('edusafe_sim_change', handleSimChange);
+    window.addEventListener('storage', handleSimChange);
+    return () => {
+      window.removeEventListener('edusafe_sim_change', handleSimChange);
+      window.removeEventListener('storage', handleSimChange);
+    };
+  }, []);
 
   const toggleSimulation = (key) => {
-    setSimulations(prev => ({ ...prev, [key]: !prev[key] }));
+    setSimulations(prev => {
+      const updated = { ...prev, [key]: !prev[key] };
+      saveSharedSimulations(updated);
+      return updated;
+    });
   };
 
   const handleLogin = (userInfo) => {
@@ -51,6 +65,9 @@ export default function App() {
         toggleSimulation={toggleSimulation}
         openSosModal={() => setSosModalOpen(true)}
       />
+
+      {/* Global Real-time Multi-role Emergency Alert Banner */}
+      <GlobalEmergencyBanner currentUser={currentUser} />
 
       {/* Main View Area Rendered based on Logged-in User's Role */}
       <main className="app-container">

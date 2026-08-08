@@ -14,12 +14,21 @@ import {
   findBestMatch,
   loadFaceModels
 } from '../utils/faceEngine';
+import { getActiveAlerts, subscribeToAlerts } from '../utils/alertEngine';
 
 import { DrowsinessDetector } from '../utils/drowsinessEngine';
 
 export default function DriverTabletView({ simulations }) {
+  const [liveAlerts, setLiveAlerts] = useState([]);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const audioEnabledRef = useRef(audioEnabled);
+  useEffect(() => {
+    setLiveAlerts(getActiveAlerts());
+    const unsub = subscribeToAlerts((updated) => {
+      setLiveAlerts(updated);
+    });
+    return () => unsub();
+  }, []);
   useEffect(() => {
     audioEnabledRef.current = audioEnabled;
   }, [audioEnabled]);
@@ -453,7 +462,34 @@ export default function DriverTabletView({ simulations }) {
         </button>
       </div>
 
-      {/* ── Driver Drowsy Alarm Banner ─────────────────────────────────── */}
+      {/* ── Active Real-time Alert Banner from Parents & SOS ── */}
+      {liveAlerts.filter(a => a.status === 'active').map(alert => (
+        <div key={alert.id} style={{
+          background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#fff',
+          padding: '14px 20px', borderRadius: '14px',
+          animation: 'pulse-danger 1.5s infinite',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <AlertTriangle size={28} />
+            <div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 900 }}>⚡ {alert.title}</div>
+              <div style={{ fontSize: '0.8rem', marginTop: '2px', opacity: 0.95 }}>
+                {alert.source}: {alert.message}
+              </div>
+            </div>
+          </div>
+          <button 
+            className="btn-secondary" 
+            style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)', padding: '6px 12px', fontSize: '0.78rem' }}
+            onClick={() => alert(`Tài xế đã bấm xác nhận đã tiếp nhận thông báo từ ${alert.source}!`)}
+          >
+            Đã nhận tin
+          </button>
+        </div>
+      ))}
+
+      {/* ── Driver Drowsy Alarm Banner ── */}
       {isDrowsy && (
         <div style={{
           background: 'var(--danger-red)', color: '#fff',

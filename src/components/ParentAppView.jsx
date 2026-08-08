@@ -12,6 +12,7 @@ import {
   getStudentRegistry,
   deleteStudent
 } from '../utils/faceEngine';
+import { dispatchAlert } from '../utils/alertEngine';
 
 const DEVIATION_TRIGGER_MS = 10000;
 
@@ -30,6 +31,16 @@ export default function ParentAppView({ simulations }) {
 
   const handleSendAlert = () => {
     setAlertState('sent');
+    dispatchAlert({
+      source: 'Phụ huynh: Phạm Văn Nam (Bé Phạm Phương Chi)',
+      senderRole: 'parent',
+      type: 'parent_alert',
+      title: '🚨 BÁO ĐỘNG TỪ PHỤ HUYNH: XE BUS-01 ĐANG CHỆCH TUYẾN!',
+      message: 'Phụ huynh phát hiện xe đang đi chệch khỏi tuyến đường quy định (> 280m)! Yêu cầu Ban Giám Hiệu, Giáo viên và Tài xế kiểm tra lập tức.',
+      busId: 'BUS-01',
+      severity: 'critical',
+      channels: ['BGH Nhà trường', 'Tablet Tài Xế BUS-01', 'GV Trần Thị Thu', 'App Phụ Huynh']
+    });
   };
 
   const handleCallDriver = () => {

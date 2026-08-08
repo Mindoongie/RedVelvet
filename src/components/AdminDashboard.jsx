@@ -1,8 +1,18 @@
-import React from 'react';
-import { Bus, Users, ShieldCheck, AlertTriangle, PhoneCall, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bus, Users, ShieldCheck, AlertTriangle, PhoneCall, FileText, BellRing } from 'lucide-react';
 import LiveMapSimulator from './LiveMapSimulator';
+import { getActiveAlerts, subscribeToAlerts } from '../utils/alertEngine';
 
 export default function AdminDashboard({ simulations }) {
+  const [liveAlerts, setLiveAlerts] = useState([]);
+
+  useEffect(() => {
+    setLiveAlerts(getActiveAlerts());
+    const unsub = subscribeToAlerts((updated) => {
+      setLiveAlerts(updated);
+    });
+    return () => unsub();
+  }, []);
   const fleetData = [
     { id: 'BUS-01', route: 'Tuyến 1: Quận 2 - Bình Thạnh - Q1', driver: 'Nguyễn Văn Hùng', teacher: 'Trần Thị Thu', students: '24 / 24', ear: simulations.drowsiness ? '0.14 (MỆT MỎI CẤP 3!)' : '0.28 (Tỉnh táo)', mar: simulations.drowsiness ? '0.65' : '0.12', status: simulations.drowsiness ? 'warning' : 'safe' },
     { id: 'BUS-02', route: 'Tuyến 2: Quận 7 - Nhà Bè', driver: 'Lê Hoàng Nam', teacher: 'Phạm Minh Trang', students: '22 / 22', ear: '0.29', mar: '0.10', status: 'safe' },
@@ -131,6 +141,28 @@ export default function AdminDashboard({ simulations }) {
           </h2>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', maxHeight: '340px' }}>
+            {/* Real-time Dispatched Alerts from Parents & SOS */}
+            {liveAlerts.filter(a => a.status === 'active').map(alert => (
+              <div 
+                key={alert.id}
+                style={{ 
+                  background: 'rgba(239, 68, 68, 0.18)', 
+                  padding: '10px', 
+                  borderRadius: '8px', 
+                  borderLeft: '4px solid #ef4444', 
+                  fontSize: '0.75rem',
+                  animation: 'pulse-danger 2s infinite'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f87171', fontSize: '0.65rem', fontWeight: 700 }}>
+                  <span>{alert.timestamp} - {alert.source}</span>
+                  <span style={{ background: '#ef4444', color: '#fff', padding: '1px 6px', borderRadius: '4px' }}>CẢNH BÁO LIVE</span>
+                </div>
+                <div style={{ fontWeight: 700, color: '#ef4444', marginTop: '2px' }}>{alert.title}</div>
+                <div style={{ color: 'var(--text-main)', marginTop: '2px', fontSize: '0.7rem' }}>{alert.message}</div>
+              </div>
+            ))}
+
             <div style={{ background: 'var(--bg-card-hover)', padding: '10px', borderRadius: '8px', borderLeft: '3px solid var(--emerald-safe)', fontSize: '0.75rem', borderTop: '1px solid var(--border-card)', borderRight: '1px solid var(--border-card)', borderBottom: '1px solid var(--border-card)' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>07:42:15 - face-api.js Edge</div>
               <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>Quét thành công 24/24 học sinh Xe Bus 01</div>
