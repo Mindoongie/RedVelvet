@@ -122,41 +122,6 @@ export default function ParentAppView({ simulations }) {
     reader.readAsDataURL(file);
   };
 
-  // Quick preset sample photo
-  const handleQuickSample = (sampleName, id, name) => {
-    setStudentId(id);
-    setFullName(name);
-    // Create a crisp canvas avatar for the student
-    const sampleCanvas = document.createElement('canvas');
-    sampleCanvas.width = 240;
-    sampleCanvas.height = 240;
-    const ctx = sampleCanvas.getContext('2d');
-    
-    // Background gradient
-    const grad = ctx.createLinearGradient(0, 0, 240, 240);
-    grad.addColorStop(0, '#0284c7');
-    grad.addColorStop(1, '#0f172a');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 240, 240);
-    
-    // Draw face icon
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 36px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('🎓', 120, 100);
-    ctx.font = 'bold 16px sans-serif';
-    ctx.fillText(name, 120, 150);
-    ctx.font = '12px sans-serif';
-    ctx.fillStyle = '#38bdf8';
-    ctx.fillText(`ID: ${id}`, 120, 175);
-
-    const sampleUrl = sampleCanvas.toDataURL('image/jpeg', 0.85);
-    const descriptor = Array.from({ length: 128 }, (_, i) => Math.cos(i * 0.38 + 2.1) * 0.19);
-    setCapturedThumbs([sampleUrl]);
-    setCapturedDescriptors([descriptor]);
-    setModelMsg(`✓ Đã nạp sẵn ảnh chân dung mẫu cho ${name}!`);
-  };
-
   // Initialize face-api models
   const initAiModels = async () => {
     try {
@@ -594,8 +559,8 @@ export default function ParentAppView({ simulations }) {
                 onChange={handleFileUpload} 
               />
 
-              {/* Alternative Quick Actions */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+              {/* Camera Action */}
+              <div>
                 {/* Option 2: Webcam Camera */}
                 <button 
                   type="button"
@@ -608,32 +573,17 @@ export default function ParentAppView({ simulations }) {
                   }}
                   className="btn-secondary"
                   style={{ 
-                    padding: '7px 4px', fontSize: '0.68rem', 
-                    justifyContent: 'center', textAlign: 'center', gap: '5px',
+                    width: '100%',
+                    padding: '8px 4px', fontSize: '0.72rem', 
+                    justifyContent: 'center', textAlign: 'center', gap: '6px',
                     background: cameraActive ? 'rgba(16,185,129,0.15)' : 'var(--bg-card)', 
                     borderColor: cameraActive ? 'var(--emerald-safe)' : 'var(--border-card)',
                     color: cameraActive ? 'var(--emerald-safe)' : 'var(--text-main)',
                     cursor: 'pointer', fontWeight: 700
                   }}
                 >
-                  <Camera size={14} />
-                  <span>Chụp từ Webcam</span>
-                </button>
-
-                {/* Option 3: Quick Preset */}
-                <button 
-                  type="button"
-                  onClick={() => handleQuickSample('chi', 'HS-001', 'Phạm Phương Chi')}
-                  className="btn-secondary"
-                  style={{ 
-                    padding: '7px 4px', fontSize: '0.68rem', 
-                    justifyContent: 'center', textAlign: 'center', gap: '5px',
-                    background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.3)', color: '#f59e0b',
-                    cursor: 'pointer', fontWeight: 700
-                  }}
-                >
-                  <Sparkles size={14} />
-                  <span>Nạp mẫu chuẩn</span>
+                  <Camera size={15} />
+                  <span>{cameraActive ? 'Đang bật Camera lấy mẫu...' : 'Chụp trực tiếp từ Webcam'}</span>
                 </button>
               </div>
 
