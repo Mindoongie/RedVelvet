@@ -1,7 +1,7 @@
 # KỊCH BẢN MASTER QUAY VIDEO DEMO & PITCHING (CHUẨN 3 PHÚT)
 > **Dự án:** EduSafe Bus – Nền Tảng An Toàn Xe Đưa Đón Học Sinh Ứng Dụng AI Thông Minh  
 > **Thời lượng chuẩn:** **2 phút 45 giây – Đúng 3 phút (180 giây)**  
-> **Tốc độ đọc đề xuất:** 135 – 145 từ / phút (Khoảng 420 từ – dứt khoát, tự tin, chuẩn nhịp thở)  
+> **Tốc độ đọc đề xuất:** 135 – 145 từ / phút (Khoảng 425 từ – gãy gọn, dứt khoát, tự tin)  
 > **Tỉ lệ khung hình:** 16:9 (Full HD 1080p hoặc 2K 60fps)
 
 ---
@@ -12,7 +12,7 @@
 timeline
     title Lộ trình Video Demo 3 Phút (180s)
     0:00 - 0:20 (20s) : Đặt vấn đề (Bỏ quên trẻ, tài xế ngủ gật) & Giới thiệu EduSafe Bus
-    0:20 - 1:05 (45s) : Cabin Lái xe (AI Edge 128-D + Còi hú EAR + Khóa an toàn rà soát cuối xe)
+    0:20 - 1:05 (45s) : Cabin Lái xe (AI Edge 128-D + Còi hú EAR + Cảnh báo còn học sinh & Khóa rà soát)
     1:05 - 1:40 (35s) : App Phụ huynh (Live GPS + Lệch tuyến Haversine + Báo động 1 chạm)
     1:40 - 2:05 (25s) : Giáo viên tại trường (Giám sát đón/trả + Manual Fallback 1 click)
     2:05 - 2:40 (35s) : Trung tâm BGH (Tổng quan 12 xe + Ma trận SOS < 200ms + Xuất CSV)
@@ -33,13 +33,13 @@ timeline
 
 ---
 
-### 🛡️ PHẦN 2: CABIN TÀI XẾ – AI EDGE, NGỦ GẬT & KHÓA AN TOÀN RÀ SOÁT (0:20 – 1:05) • [45 giây]
+### 🛡️ PHẦN 2: CABIN TÀI XẾ – AI EDGE, NGỦ GẬT & KHÓA AN TOÀN KÉP (0:20 – 1:05) • [45 giây]
 
 | Thời gian | Thao tác trên màn hình (Screen Actions) | Lời thoại thuyết minh (Voice-over) |
 | :--- | :--- | :--- |
 | **0:20 – 0:38** | • Tại giao diện Tablet Lái xe: Bấm **"Bắt đầu chuyến đi"**.<br>• Mở camera AI: Đưa mặt vào khung nhận diện, hiện `Match: 99.4% ✓` và danh sách tự động tích xanh. | *"[Tông giọng hào hứng, tự tin]* Đầu tiên là Tablet tại cabin tài xế. Camera **AI Edge** trích xuất vector khuôn mặt 128 chiều, tự động điểm danh với **độ tin cậy 99.4%** ngay trên thiết bị mà không cần gửi ảnh lên cloud, vừa bảo mật quyền riêng tư cho trẻ vừa hoạt động tốt cả khi mất mạng." |
-| **0:38 – 0:52** | • Chuyển sang cột trái: Bật webcam giám sát tài xế.<br>• Nhắm mắt > 2s -> Màn hình nhảy **banner đỏ**, còi báo động trong cabin hú liên tục (`beep alert`). | *"Đặc biệt, Lõi AI giám sát mắt **EAR** và ngáp **MAR** theo mô hình **Noisy-OR Bayesian Fusion**. Khi phát hiện tài xế nhắm mắt quá 2.5 giây, còi báo động lập tức hú vang trong cabin để đánh thức tài xế, ngăn ngừa tai nạn từ sớm!" |
-| **0:52 – 1:05** | • Bấm thử **"Kết thúc chuyến (Chưa rà soát ⚠)"** -> Hiện cảnh báo đỏ chặn lại: *⛔ QUY ĐỊNH BẮT BUỘC*.<br>• Bấm **"Rà soát khoang xe cuối hành trình"** -> Bấm **"Xác nhận xe trống 100% & Bàn giao"**. | *"[Tông giọng đanh thép, khẳng định]* Đặc biệt, hệ thống áp dụng **cơ chế khóa an toàn nghiêm ngặt**: Nếu tài xế chưa hoàn thành quy trình rà soát khoang xe cuối hành trình, hệ thống sẽ chặn hoàn toàn lệnh kết thúc chuyến đi, buộc tài xế phải kiểm tra tận mắt, **xóa bỏ 100% thảm kịch bỏ quên học sinh** trên xe!" |
+| **0:38 – 0:50** | • Chuyển sang cột trái: Bật webcam giám sát tài xế.<br>• Nhắm mắt > 2s -> Màn hình nhảy **banner đỏ**, còi báo động trong cabin hú liên tục (`beep alert`). | *"Đặc biệt, Lõi AI giám sát mắt **EAR** và ngáp **MAR** theo mô hình **Noisy-OR Bayesian Fusion**. Khi phát hiện tài xế nhắm mắt quá 2.5 giây, còi báo động lập tức hú vang trong cabin để đánh thức tài xế, ngăn ngừa tai nạn từ sớm!" |
+| **0:50 – 1:05** | • Thử bấm **"Kết thúc chuyến"** khi chưa rà soát hoặc còn học sinh -> Hệ thống hiện popup cảnh báo đỏ: *⛔ QUY ĐỊNH BẮT BUỘC & ⚠ Còn học sinh trên xe*.<br>• Bấm **"Rà soát khoang xe cuối hành trình"** -> Bấm **"Xác nhận xe trống 100% & Bàn giao"**. | *"[Tông giọng đanh thép, khẳng định]* Hệ thống áp dụng **cơ chế khóa an toàn kép**: Nếu vẫn còn học sinh trên xe hoặc tài xế chưa hoàn thành quy trình rà soát khoang xe cuối hành trình, hệ thống lập tức cảnh báo nguy hiểm và chặn hoàn toàn lệnh kết thúc chuyến đi, **xóa bỏ 100% thảm kịch bỏ quên trẻ em**!" |
 
 ---
 
@@ -77,13 +77,13 @@ timeline
 
 ---
 
-## 🎙️ BẢN ĐỌC LIỀN MẠCH CHO MC (DƯỚI 420 TỪ – ĐỌC TRONG 2 PHÚT 50 GIÂY)
+## 🎙️ BẢN ĐỌC LIỀN MẠCH CHO MC (DƯỚI 425 TỪ – ĐỌC TRONG 2 PHÚT 50 GIÂY)
 
 > *"Kính chào Ban Giám Khảo! Những thảm kịch do bỏ quên học sinh trên xe hay tài xế ngủ gật gây tai nạn đang là nỗi bất an lớn của xã hội. Nhóm chúng em phát triển **EduSafe Bus** – nền tảng AI Edge và IoT thời gian thực, xây dựng 'lá chắn an toàn đa lớp' bảo vệ học sinh từ lúc bước lên xe đến khi về tới trường!*
 >
 > *Đầu tiên là Tablet tại cabin tài xế. Camera AI Edge trích xuất vector khuôn mặt 128 chiều, tự động điểm danh với độ tin cậy trên 99% ngay trên thiết bị mà không cần gửi ảnh lên cloud, vừa bảo mật quyền riêng tư cho trẻ vừa hoạt động tốt cả khi mất mạng.*
 >
-> *Đặc biệt, Lõi AI giám sát mắt EAR và ngáp MAR theo mô hình Noisy-OR Bayesian Fusion. Khi phát hiện tài xế nhắm mắt quá 2.5 giây, còi báo động lập tức hú vang trong cabin để đánh thức tài xế, ngăn ngừa tai nạn từ sớm! Đặc biệt, hệ thống áp dụng cơ chế khóa an toàn nghiêm ngặt: Nếu tài xế chưa hoàn thành quy trình rà soát khoang xe cuối hành trình, hệ thống sẽ chặn hoàn toàn lệnh kết thúc chuyến đi, buộc tài xế phải kiểm tra tận mắt, xóa bỏ 100% thảm kịch bỏ quên học sinh trên xe.*
+> *Đặc biệt, Lõi AI giám sát mắt EAR và ngáp MAR theo mô hình Noisy-OR Bayesian Fusion. Khi phát hiện tài xế nhắm mắt quá 2.5 giây, còi báo động lập tức hú vang trong cabin để đánh thức tài xế, ngăn ngừa tai nạn từ sớm! Hệ thống áp dụng cơ chế khóa an toàn kép: Nếu vẫn còn học sinh trên xe hoặc tài xế chưa hoàn thành quy trình rà soát khoang xe cuối hành trình, hệ thống lập tức cảnh báo nguy hiểm và chặn hoàn toàn lệnh kết thúc chuyến đi, xóa bỏ 100% thảm kịch bỏ quên học sinh trên xe.*
 >
 > *Với Phụ huynh, giao diện điện thoại cho phép theo dõi trực tiếp vị trí GPS của xe, giờ con lên xe và thời gian dự kiến tới trường. Khi xe chệch khỏi lộ trình chuẩn trên 100m dựa trên thuật toán Haversine GPS, phụ huynh nhận cảnh báo ngay. Chỉ cần bấm 'Gửi cảnh báo khẩn cấp', tín hiệu lập tức đồng bộ thời gian thực tới BGH, Giáo viên và Tài xế trong chưa đầy 0.2 giây!*
 >

@@ -282,14 +282,25 @@ export default function DriverTabletView({ simulations }) {
   const handleEndTrip = () => {
     if (!tripRosterState) return;
     
-    // Quy định bắt buộc: Chưa rà soát khoang xe thì KHÔNG ĐƯỢC kết thúc chuyến đi
+    // 1. Quy định bắt buộc: Chưa rà soát khoang xe thì KHÔNG ĐƯỢC kết thúc chuyến đi
     if (!sweepVerified) {
       alert('⛔ QUY ĐỊNH BẮT BUỘC: Bạn chưa hoàn thành quy trình "Rà soát khoang xe cuối hành trình".\n\nVui lòng bấm nút rà soát để kiểm tra không bỏ quên học sinh trước khi được phép kết thúc chuyến đi!');
       setShowSweepModal(true);
       return;
     }
+
+    // 2. Cảnh báo nguy hiểm: Nếu vẫn còn học sinh đang trên xe (on_bus)
+    const onBusList = tripRosterState.entries
+      .filter(e => e.status === 'on_bus')
+      .map(e => e.full_name);
+
+    let confirmMsg = 'Xác nhận kết thúc chuyến đi và bàn giao xe an toàn (Đã rà soát 100% & Toàn bộ học sinh đã xuống xe)?';
+
+    if (onBusList.length > 0) {
+      confirmMsg = `⚠ CẢNH BÁO NGUY HIỂM: Vẫn còn ${onBusList.length} học sinh đang trên xe (${onBusList.join(', ')})!\n\nHãy kiểm tra trực tiếp khoang xe để đảm bảo không bỏ quên học sinh ngủ quên. Bạn có chắc chắn muốn kết thúc chuyến đi không?`;
+    }
     
-    if (window.confirm('Xác nhận kết thúc chuyến đi và bàn giao xe an toàn (Đã xác nhận rà soát khoang xe 100%)?')) {
+    if (window.confirm(confirmMsg)) {
       setIsTripActive(false);
       setTripRosterState(null);
       setSweepVerified(false);
