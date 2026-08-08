@@ -1,19 +1,19 @@
 # KỊCH BẢN MASTER QUAY VIDEO DEMO & PITCHING (CHUẨN 3 PHÚT)
 > **Dự án:** EduSafe Bus – Nền Tảng An Toàn Xe Đưa Đón Học Sinh Ứng Dụng AI Thông Minh  
 > **Thời lượng chuẩn:** **2 phút 45 giây – Đúng 3 phút (180 giây)**  
-> **Tốc độ đọc đề xuất:** 135 – 145 từ / phút (Khoảng 420 từ – tự tin, dứt khoát, liền mạch 100%)  
+> **Tốc độ đọc đề xuất:** 135 – 145 từ / phút (Khoảng 430 từ – liền mạch, tự tin, trọn vẹn nghiệp vụ)  
 > **Tỉ lệ khung hình:** 16:9 (Full HD 1080p hoặc 2K 60fps)
 
 ---
 
-## ⏱️ TIMELINE TỔNG QUAN (180 GIÂY – MỖI VAI TRÒ 1 LẦN DUY NHẤT)
+## ⏱️ TIMELINE TỔNG QUAN (180 GIÂY – 5 BƯỚC ĐẦY ĐỦ NGHIỆP VỤ)
 
 ```mermaid
 timeline
-    title Luồng Video Demo 5 Bước Liền Mạch (180s)
-    0:00 - 0:45 (45s) : 1. App Phụ huynh (Theo dõi Live GPS + Cảnh báo xe chệch tuyến > 280m + Báo động 1 chạm)
-    0:45 - 1:30 (45s) : 2. Cabin Lái xe (AI Edge 99.4% + Còi hú EAR ngủ gật + Khóa an toàn kép rà soát cuối xe)
-    1:30 - 1:55 (25s) : 3. Giáo viên tại trường (Giám sát đón/trả + Manual Fallback 1 click)
+    title Luồng Video Demo 5 Bước Trọn Vẹn (180s)
+    0:00 - 0:45 (45s) : 1. Phụ huynh (Đăng ký vé xe + Chụp lấy mẫu Face ID -> Xem Live GPS & Báo động lệch tuyến)
+    0:45 - 1:30 (45s) : 2. Cabin Lái xe (AI Edge nhận diện bé 99.4% + Còi hú EAR ngủ gật + Khóa an toàn kép rà soát cuối xe)
+    1:30 - 1:55 (25s) : 3. Giáo viên tại trường (Giám sát đón/trả + Manual Fallback ghi đè 1 click)
     1:55 - 2:35 (40s) : 4. Ban Giám Hiệu (Quản lý 12 xe, 284 học sinh -> Ma trận SOS < 200ms -> Xuất CSV)
     2:35 - 3:00 (25s) : 5. AI Specs Drawer & Tuyên bố sứ mệnh kết bài
 ```
@@ -24,12 +24,12 @@ timeline
 
 ---
 
-### 🌟 PHẦN 1: MỞ ĐẦU & APP PHỤ HUYNH (0:00 – 0:45) • [45 giây]
+### 🌟 PHẦN 1: MỞ ĐẦU, ĐĂNG KÝ HỌC SINH FACE ID & THEO DÕI XE (0:00 – 0:45) • [45 giây]
 
 | Thời gian | Thao tác trên màn hình (Screen Actions) | Lời thoại thuyết minh (Voice-over) |
 | :--- | :--- | :--- |
-| **0:00 – 0:25** | • Mở màn hình `LoginScreen` -> Chọn tài khoản **Phụ huynh** (`parent.chi@edusafe.edu.vn`).<br>• Giao diện mở ngay Tab **"Theo dõi xe"**: Xem bản đồ Live GPS, lộ trình di chuyển và thời gian dự kiến tới trường. | *"[Tông giọng trầm ấm, tự tin]* Kính chào Ban Giám Khảo! Những thảm kịch đau lòng do **bỏ quên học sinh trên xe** hay **tài xế ngủ gật gây tai nạn** đang là nỗi bất an lớn của mọi gia đình và nhà trường. Nhóm chúng em phát triển **EduSafe Bus** – nền tảng AI Edge và IoT thời gian thực, xây dựng 'lá chắn an toàn đa lớp' bảo vệ học sinh từ lúc bước lên xe đến khi về tới trường!<br><br>Đầu tiên là App Phụ huynh: Phụ huynh dễ dàng theo dõi trực tiếp vị trí GPS thời gian thực của xe chở con, giờ con lên xe và lộ trình di chuyển." |
-| **0:25 – 0:45** | • Màn hình xuất hiện cảnh báo đỏ: *Xe đang chệch lộ trình > 280m*.<br>• Bấm nút đỏ: **"Gửi cảnh báo khẩn cấp"**.<br>• Thanh **Global Emergency Banner** nhấp nháy đỏ trên toàn hệ thống trong < 0.2s. | *"Khi xe chệch khỏi lộ trình chuẩn trên 100m dựa trên **thuật toán khoảng cách Haversine GPS**, phụ huynh nhận cảnh báo ngay. Chỉ cần bấm **'Gửi cảnh báo khẩn cấp'**, tín hiệu lập tức đồng bộ thời gian thực tới BGH, Giáo viên và Tài xế trong chưa đầy **0.2 giây**!" |
+| **0:00 – 0:25** | • Mở màn hình `LoginScreen` -> Chọn tài khoản **Phụ huynh** (`parent.chi@edusafe.edu.vn`).<br>• Giao diện mở ngay Tab: **"1. Đăng ký & Nạp ảnh"**.<br>• Nhập ID `HS-001`, tên bé *Phạm Phương Chi*, tuyến `BUS-01`.<br>• Bấm **"Chụp trực tiếp từ Webcam"** lấy mẫu khuôn mặt -> Hiện `✓ Vector 128-D sẵn sàng`.<br>• Bấm **"Hoàn tất đăng ký"**. | *"[Tông giọng trầm ấm, tự tin]* Kính chào Ban Giám Khảo! Những thảm kịch do **bỏ quên học sinh trên xe** hay **tài xế ngủ gật gây tai nạn** đang là nỗi bất an lớn của xã hội. Nhóm chúng em phát triển **EduSafe Bus** – nền tảng AI Edge và IoT thời gian thực, xây dựng 'lá chắn an toàn đa lớp' bảo vệ học sinh từ lúc bước lên xe đến khi về tới trường!<br><br>Quy trình bắt đầu từ Phụ huynh: Phụ huynh dễ dàng đăng ký tuyến xe và **nạp mẫu nhận diện Face ID cho con trực tiếp qua camera**. Mô hình AI trích xuất vector đặc trưng 128 chiều bảo mật ngay trên thiết bị." |
+| **0:25 – 0:45** | • Chuyển sang Tab: **"2. Theo dõi GPS"**: Xem bản đồ Live GPS và ETA tới trường.<br>• Thấy cảnh báo đỏ: *Xe đang chệch lộ trình > 280m*.<br>• Bấm nút đỏ: **"Gửi cảnh báo khẩn cấp"**.<br>• Thanh **Global Emergency Banner** nhấp nháy đỏ trên toàn hệ thống trong < 0.2s. | *"Đồng thời phụ huynh theo dõi trực tiếp vị trí GPS thời gian thực của xe. Khi xe chệch khỏi lộ trình chuẩn trên 100m dựa trên **thuật toán khoảng cách Haversine GPS**, phụ huynh nhận cảnh báo ngay. Chỉ cần bấm **'Gửi cảnh báo khẩn cấp'**, tín hiệu lập tức đồng bộ thời gian thực tới BGH, Giáo viên và Tài xế trong chưa đầy **0.2 giây**!" |
 
 ---
 
@@ -37,7 +37,7 @@ timeline
 
 | Thời gian | Thao tác trên màn hình (Screen Actions) | Lời thoại thuyết minh (Voice-over) |
 | :--- | :--- | :--- |
-| **0:45 – 1:05** | • Đăng xuất -> Đăng nhập **Lái xe bus** (`driver.hung@edusafe.edu.vn`).<br>• Bấm **"Bắt đầu chuyến đi"**.<br>• Camera AI đối chiếu khuôn mặt học sinh -> Hiện `Match: 99.4% ✓`, danh sách tự động tích xanh. | *"[Tông giọng hào hứng, tự hào]* Tiếp theo là Tablet tại cabin tài xế. Camera **AI Edge** đối chiếu vector và tự động điểm danh với **độ tin cậy 99.4%** ngay trên thiết bị mà không cần gửi ảnh lên cloud, vừa bảo mật quyền riêng tư cho trẻ vừa hoạt động mượt mà cả khi mất mạng." |
+| **0:45 – 1:05** | • Đăng xuất -> Đăng nhập **Lái xe bus** (`driver.hung@edusafe.edu.vn`).<br>• Bấm **"Bắt đầu chuyến đi"**.<br>• Camera AI đối chiếu đúng gương mặt bé *Phạm Phương Chi* vừa đăng ký -> Hiện `Match: 99.4% ✓`, danh sách tự động tích xanh. | *"[Tông giọng hào hứng, tự hào]* Tiếp theo là Tablet tại cabin tài xế. Camera **AI Edge** đối chiếu vector và tự động điểm danh với **độ tin cậy 99.4%** ngay trên thiết bị mà không cần gửi ảnh lên cloud, vừa bảo mật quyền riêng tư cho trẻ vừa hoạt động mượt mà cả khi mất mạng." |
 | **1:05 – 1:18** | • Chuyển sang cột trái: Bật webcam giám sát tài xế.<br>• Nhắm mắt > 2s -> Màn hình nhảy **banner đỏ**, còi báo động trong cabin hú liên tục (`beep alert`). | *"Đặc biệt, Lõi AI giám sát mắt **EAR** và ngáp **MAR** theo mô hình **Noisy-OR Bayesian Fusion**. Khi phát hiện tài xế nhắm mắt quá 2.5 giây, còi báo động lập tức hú vang trong cabin để đánh thức tài xế, ngăn ngừa tai nạn từ sớm!" |
 | **1:18 – 1:30** | • Thử bấm **"Kết thúc chuyến"** -> Hệ thống hiện cảnh báo đỏ chặn lại: *⛔ QUY ĐỊNH BẮT BUỘC*.<br>• Bấm **"Rà soát khoang xe cuối hành trình"** -> Bấm **"Xác nhận xe trống 100% & Bàn giao"**. | *"Khi về bến, hệ thống áp dụng **cơ chế khóa an toàn kép**: Nếu vẫn còn học sinh trên xe hoặc chưa hoàn thành rà soát khoang xe cuối hành trình, hệ thống sẽ chặn hoàn toàn lệnh kết thúc chuyến, **xóa bỏ 100% thảm kịch bỏ quên học sinh**!" |
 
@@ -68,11 +68,11 @@ timeline
 
 ---
 
-## 🎙️ BẢN ĐỌC LIỀN MẠCH CHO MC (DƯỚI 420 TỪ – ĐỌC TRONG 2 PHÚT 45 GIÂY)
+## 🎙️ BẢN ĐỌC LIỀN MẠCH CHO MC (DƯỚI 430 TỪ – ĐỌC TRONG 2 PHÚT 50 GIÂY)
 
-> *"Kính chào Ban Giám Khảo! Những thảm kịch đau lòng do bỏ quên học sinh trên xe hay tài xế ngủ gật gây tai nạn đang là nỗi bất an lớn của mọi gia đình và nhà trường. Nhóm chúng em phát triển **EduSafe Bus** – nền tảng AI Edge và IoT thời gian thực, xây dựng 'lá chắn an toàn đa lớp' bảo vệ học sinh từ lúc bước lên xe đến khi về tới trường!*
+> *"Kính chào Ban Giám Khảo! Những thảm kịch do bỏ quên học sinh trên xe hay tài xế ngủ gật gây tai nạn đang là nỗi bất an lớn của xã hội. Nhóm chúng em phát triển **EduSafe Bus** – nền tảng AI Edge và IoT thời gian thực, xây dựng 'lá chắn an toàn đa lớp' bảo vệ học sinh từ lúc bước lên xe đến khi về tới trường!*
 >
-> *Đầu tiên là App Phụ huynh: Phụ huynh dễ dàng theo dõi trực tiếp vị trí GPS thời gian thực của xe chở con, giờ con lên xe và lộ trình di chuyển. Khi xe chệch khỏi lộ trình chuẩn trên 100m dựa trên thuật toán khoảng cách Haversine GPS, phụ huynh nhận cảnh báo ngay. Chỉ cần bấm 'Gửi cảnh báo khẩn cấp', tín hiệu lập tức đồng bộ thời gian thực tới BGH, Giáo viên và Tài xế trong chưa đầy 0.2 giây!*
+> *Quy trình bắt đầu từ Phụ huynh: Phụ huynh dễ dàng đăng ký tuyến xe và nạp mẫu nhận diện Face ID cho con trực tiếp qua camera. Mô hình AI trích xuất vector đặc trưng 128 chiều bảo mật ngay trên thiết bị. Đồng thời phụ huynh theo dõi trực tiếp vị trí GPS thời gian thực của xe. Khi xe chệch khỏi lộ trình chuẩn trên 100m dựa trên thuật toán khoảng cách Haversine GPS, phụ huynh nhận cảnh báo ngay. Chỉ cần bấm 'Gửi cảnh báo khẩn cấp', tín hiệu lập tức đồng bộ thời gian thực tới BGH, Giáo viên và Tài xế trong chưa đầy 0.2 giây!*
 >
 > *Tại Cabin tài xế, camera AI Edge đối chiếu vector và tự động điểm danh với độ tin cậy 99.4% ngay trên thiết bị mà không cần gửi ảnh lên cloud, vừa bảo mật quyền riêng tư cho trẻ vừa hoạt động mượt mà cả khi mất mạng. Đặc biệt, Lõi AI giám sát mắt EAR và ngáp MAR theo mô hình Noisy-OR Bayesian Fusion – khi phát hiện tài xế nhắm mắt quá 2.5 giây, còi báo động lập tức hú vang để đánh thức tài xế! Hệ thống áp dụng cơ chế khóa an toàn kép: buộc tài xế phải rà soát khoang xe cuối hành trình, xóa bỏ 100% thảm kịch bỏ quên học sinh.*
 >
