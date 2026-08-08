@@ -19,6 +19,12 @@ import { DrowsinessDetector } from '../utils/drowsinessEngine';
 
 export default function DriverTabletView({ simulations }) {
   const [audioEnabled, setAudioEnabled] = useState(true);
+  const audioEnabledRef = useRef(audioEnabled);
+  useEffect(() => {
+    audioEnabledRef.current = audioEnabled;
+  }, [audioEnabled]);
+
+  const lastAlarmTimeRef = useRef(0);
   
   // Drowsiness Engine setup
   const detectorRef = useRef(new DrowsinessDetector());
@@ -81,9 +87,18 @@ export default function DriverTabletView({ simulations }) {
         pitch: pitchInput
       });
 
-      // Play beep sound if Layer 1 reflex triggers
-      if (res.isL1Triggered) {
-        playBeepAlert();
+      // Play beep/alarm sound if active
+      const now = Date.now();
+      if (res.alertLevel >= 2) {
+        const alarmInterval = res.alertLevel >= 3 ? 500 : 1500; // 0.5s for Level 3 (sleeping), 1.5s for Level 2 (drowsy)
+        if (now - lastAlarmTimeRef.current >= alarmInterval) {
+          playDrowsyAlarm(res.alertLevel);
+          lastAlarmTimeRef.current = now;
+        }
+      } else if (res.isL1Triggered) {
+        if (audioEnabledRef.current) {
+          playBeepAlert();
+        }
       }
     }, 250);
 
@@ -129,6 +144,7 @@ export default function DriverTabletView({ simulations }) {
   }, []);
 
   const playBeepAlert = () => {
+    if (!audioEnabledRef.current) return;
     try {
       const ctx  = new (window.AudioContext || window.webkitAudioContext)();
       const osc  = ctx.createOscillator();
@@ -143,7 +159,42 @@ export default function DriverTabletView({ simulations }) {
     } catch (e) {}
   };
 
+  const playDrowsyAlarm = (level) => {
+    if (!audioEnabledRef.current) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'sawtooth';
+      if (level >= 3) {
+        // Critical: High-pitch urgent warning siren
+        osc.frequency.setValueAtTime(988, ctx.currentTime); // B5 note
+        osc.frequency.linearRampToValueAtTime(1318, ctx.currentTime + 0.15); // E6 note
+        osc.frequency.linearRampToValueAtTime(988, ctx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+      } else {
+        // Warning: standard alert beep
+        osc.frequency.setValueAtTime(784, ctx.currentTime); // G5 note
+        osc.frequency.linearRampToValueAtTime(880, ctx.currentTime + 0.2); // A5 note
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.4);
+      }
+    } catch (e) {}
+  };
+
   const playBeepSuccess = () => {
+    if (!audioEnabledRef.current) return;
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const osc = ctx.createOscillator();
@@ -158,6 +209,7 @@ export default function DriverTabletView({ simulations }) {
   };
 
   const playBeepError = () => {
+    if (!audioEnabledRef.current) return;
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const osc = ctx.createOscillator();
