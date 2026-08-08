@@ -17,7 +17,7 @@ import { dispatchAlert } from '../utils/alertEngine';
 const DEVIATION_TRIGGER_MS = 10000;
 
 export default function ParentAppView({ simulations }) {
-  const [activeTab, setActiveTab] = useState('register'); // Default to 'register' first for demo flow
+  const [activeTab, setActiveTab] = useState('tracking'); // 'tracking' | 'register'
   
   // ─── Tracking Tab States ────────────────────────────────────────────────
   const [aiDeviated, setAiDeviated] = useState(false);
