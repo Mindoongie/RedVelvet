@@ -1,10 +1,8 @@
-# EduSafe Bus - Nền Tảng Giám Sát An Toàn Xe Đưa Đón Học Sinh Ứng Dụng AI Thông Minh
-
 <div align="center">
 
-<img src="./public/edusafe_logo.png" alt="EduSafe Bus Logo" width="140" style="border-radius: 16px; margin-bottom: 12px;" />
+<img src="./public/edusafe_logo.png" alt="EduSafe Bus Logo" width="140" style="border-radius: 16px; margin-bottom: 14px;" />
 
-<br/>
+# EduSafe Bus - Nền Tảng Giám Sát An Toàn Xe Đưa Đón Học Sinh Ứng Dụng AI Thông Minh
 
 [![React](https://img.shields.io/badge/React-19.x-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
