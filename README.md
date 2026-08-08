@@ -33,10 +33,9 @@
    - [4.3. Pipeline Định Vị GPS & Thuật Toán Lệch Tuyến Haversine](#43-pipeline-định-vị-gps--thuật-toán-lệch-tuyến-haversine)
    - [4.4. Pipeline Điều Phối Báo Động Khẩn Cấp & Ma Trận SOS](#44-pipeline-điều-phối-báo-động-khẩn-cấp--ma-trận-sos)
 5. [Danh Sách Tài Khoản Phân Quyền (Demo Credentials)](#-5-danh-sách-tài-khoản-phân-quyền-demo-credentials)
-6. [Cấu Hình Môi Trường & Hướng Dẫn Cài Đặt (Setup & Run)](#-6-cấu-hình-môi-trường--hướng-dẫn-cài-đặt-setup--run)
+6. [Hướng Dẫn Cài Đặt & Khởi Chạy (Setup & Run)](#-6-hướng-dẫn-cài-đặt--khởi-chạy-setup--run)
    - [6.1. Chạy Môi Trường Local Development](#61-chạy-môi-trường-local-development)
    - [6.2. Đóng Gói & Chạy Bằng Docker Compose](#62-đóng-gói--chạy-bằng-docker-compose)
-   - [6.3. Cấu Hình Biến Môi Trường (.env)](#63-cấu-hình-biến-môi-trường-env)
 7. [Quy Trình Triển Khai Sản Phẩm (Production Deployment)](#-7-quy-trình-triển-khai-sản-phẩm-production-deployment)
 8. [Tác Giả & Bản Quyền (License)](#-8-tác-giả--bản-quyền-license)
 
@@ -151,7 +150,9 @@ Hệ thống hỗ trợ cơ chế tự động nhận diện phân quyền thôn
 
 ---
 
-## ⚙️ 6. Cấu Hình Môi Trường & Hướng Dẫn Cài Đặt (Setup & Run)
+## ⚙️ 6. Hướng Dẫn Cài Đặt & Khởi Chạy (Setup & Run)
+
+> 💡 **Khởi chạy độc lập (Zero-Config):** Ứng dụng chạy trực tiếp toàn bộ các mô hình AI Edge, thuật toán Drowsiness và GPS giả lập ngay trên Client mà không yêu cầu cấu hình file `.env` hay cài đặt database phức tạp.
 
 ### 6.1. Chạy Môi Trường Local Development
 
@@ -191,30 +192,6 @@ docker-compose logs -f
 docker-compose down
 ```
 Truy cập ứng dụng qua Nginx tại cổng: `http://localhost:8080` (hoặc `http://localhost:5173`)
-
-### 6.3. Cấu Hình Biến Môi Trường (.env)
-
-Tạo file `.env` tại thư mục gốc của dự án dựa trên mẫu dưới đây:
-
-```env
-# ─── Cấu hình Ứng Dụng Client ─────────────────────────────────
-VITE_APP_TITLE=EduSafe Bus Platform
-VITE_APP_ENV=production
-VITE_API_BASE_URL=https://api.edusafe.edu.vn/v1
-VITE_WS_SERVER_URL=wss://ws.edusafe.edu.vn
-
-# ─── Cấu hình Ngưỡng Thuật Toán AI Sinh Trắc Học ───────────────
-VITE_FACE_MATCH_THRESHOLD=0.55
-VITE_DROWSINESS_EAR_THRESHOLD=0.19
-VITE_DROWSINESS_EAR_RECOVERY=0.23
-VITE_DROWSINESS_MAR_THRESHOLD=0.55
-VITE_GPS_DEVIATION_METERS=100
-
-# ─── Cấu hình Tọa Độ Bản Đồ Mặc Định (TP. Hồ Chí Minh) ─────────
-VITE_MAP_DEFAULT_LAT=10.7769
-VITE_MAP_DEFAULT_LNG=106.7009
-VITE_MAP_ZOOM_LEVEL=14
-```
 
 ---
 
